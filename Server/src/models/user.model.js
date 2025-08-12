@@ -21,7 +21,7 @@ const userSchema = new Schema(
             lowercase: true,
             trim: true,
         },
-        fullName: {
+        name: {
             type: String,
             required: true,
             trim: true,
@@ -31,13 +31,10 @@ const userSchema = new Schema(
             type: String, //cloudinary url
             required: true,
         },
-        coverimage: {
-            type: String, //cloudinary url
-        },
-        watchHistory: [
+        subscriptions: [
             {
                 type: Schema.Types.ObjectId,
-                ref: "Video"
+                ref: "Subscription"
             }
         ],
         password: {
@@ -54,7 +51,7 @@ const userSchema = new Schema(
 
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next();
-    this.password = bcrypt.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next();
 })
 
@@ -63,11 +60,11 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 }
 
 userSchema.methods.generateAccessToken = function () {
-    jwt.sign({
+    return jwt.sign({
         _id: this.id,
         email: this.email,
         username: this.username,
-        fullName: this.fullName
+        name: this.name
     },
         process.env.ACCESS_TOKEN_SECRET,
         {
@@ -76,7 +73,7 @@ userSchema.methods.generateAccessToken = function () {
     )
 }
 userSchema.methods.generateRefreshToken = function () {
-    jwt.sign({
+    return jwt.sign({
         _id: this.id,
     },
         process.env.REFRESH_TOKEN_SECRET,
