@@ -4,7 +4,6 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/apiResponse.js"
 import jwt from "jsonwebtoken"
-import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -94,7 +93,7 @@ const loginUser = asyncHandler(async (req, res) => {
     const { email, username, password } = req.body
 
     if (!(username || email)) {
-        throw new ApiError(400, "Username or email  is required")
+        throw new ApiError(400, "Username or email is required")
     }
 
     const user = await User.findOne({
