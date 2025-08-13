@@ -22,7 +22,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 }
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { fullname, email, username, password, role } = req.body;
+    const { fullname, email, username, password} = req.body;
 
     // 1. Basic validations
     if ([fullname, email, username, password].some((field) => field?.trim() === "")) {
@@ -49,11 +49,6 @@ const registerUser = asyncHandler(async (req, res) => {
         avatarUrl = avatar?.url || "";
     }
 
-    // 4. Determine role (only allow "user" or "admin")
-    const finalRole = role && ["user", "admin"].includes(role.toLowerCase())
-        ? role.toLowerCase()
-        : "user";
-
     // 5. Create user
     const user = await User.create({
         fullname,
@@ -61,7 +56,6 @@ const registerUser = asyncHandler(async (req, res) => {
         email: email.toLowerCase(),
         password,
         username: username.toLowerCase(),
-        role: finalRole
     });
 
     // 6. Remove sensitive fields

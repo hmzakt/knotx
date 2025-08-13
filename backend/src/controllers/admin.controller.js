@@ -3,6 +3,8 @@ import { Paper } from "../models/papers.model.js";
 import { Question } from "../models/question.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import { User } from "../models/user.model.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 // Create a new test series
 export const createTestSeries = async (req, res) => {
@@ -100,3 +102,19 @@ export const createQuestion = async (req, res) => {
     return res.status(500).json(new ApiError(500, "Server error", error));
   }
 };
+
+// Promote user to admin
+export const promoteToAdmin = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const user = await User.findById(userId);
+  
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  user.role = 'admin';
+  await user.save();
+
+  res.json({ success: true, message: 'User promoted to admin' });
+});
