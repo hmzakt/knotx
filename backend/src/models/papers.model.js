@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-const paperSchema = ({
+const paperSchema = new Schema({
     title: {
         type: String,
         required: true,
@@ -23,6 +23,6 @@ const paperSchema = ({
     ]
 },
     { timestamps: true }
-);
+)
 
 export const Paper = mongoose.model("Paper", paperSchema)

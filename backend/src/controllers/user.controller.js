@@ -22,64 +22,61 @@ const generateAccessAndRefreshToken = async (userId) => {
 }
 
 const registerUser = asyncHandler(async (req, res) => {
-    //get user details from frontend
+    const { fullname, email, username, password, role } = req.body;
 
-    //validations - not empty
-    //check if user already exists : username or email
-    //check if files are there -  avatar and cover image 
-    //upload them to cloudinary, avatar 
-    //create user object - create entry in db
-    //remove password and refresh token field from response
-    //check for user creation
-    //return response
-
-    const { fullname, email, username, password } = req.body
-
-
+    // 1. Basic validations
     if ([fullname, email, username, password].some((field) => field?.trim() === "")) {
-        throw new ApiError(400, "All fields are compulsary")
+        throw new ApiError(400, "All fields are compulsory");
     }
 
+    // 2. Check if user already exists
     const existedUser = await User.findOne({
-        $or: [{ username }, { email }]
-    })
+        $or: [
+            { username: username.toLowerCase() },
+            { email: email.toLowerCase() }
+        ]
+    });
 
     if (existedUser) {
-        throw new ApiError(409, "User already exists, username and email must be unique")
+        throw new ApiError(409, "User already exists, username and email must be unique");
     }
 
-    const avatarLocalPath = req.files?.avatar[0]?.path;
-
-
-    if (!avatarLocalPath) {
-        throw new ApiError(400, "Avatar file is required")
+    // 3. Handle avatar upload (optional)
+    let avatarUrl = "";
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
+    if (avatarLocalPath) {
+        const avatar = await uploadOnCloudinary(avatarLocalPath);
+        avatarUrl = avatar?.url || "";
     }
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    // 4. Determine role (only allow "user" or "admin")
+    const finalRole = role && ["user", "admin"].includes(role.toLowerCase())
+        ? role.toLowerCase()
+        : "user";
 
-
+    // 5. Create user
     const user = await User.create({
         fullname,
-        avatar: avatar.url,
+        avatar: avatarUrl,
         email: email.toLowerCase(),
         password,
-        username: username.toLowerCase()
-    })
+        username: username.toLowerCase(),
+        role: finalRole
+    });
 
-    const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken"
-    )
+    // 6. Remove sensitive fields
+    const createdUser = await User.findById(user._id).select("-password -refreshToken");
 
     if (!createdUser) {
-        throw new ApiError(500, "Something went wrong")
+        throw new ApiError(500, "Something went wrong while registering the user");
     }
 
+    // 7. Send response
     return res.status(201).json(
-        new ApiResponse(200, createdUser, "User registered successfully")
-    )
+        new ApiResponse(201, createdUser, "User registered successfully")
+    );
+});
 
-
-})
 
 const loginUser = asyncHandler(async (req, res) => {
     //req body->data
@@ -119,7 +116,7 @@ const loginUser = asyncHandler(async (req, res) => {
         httpOnly: true,
         secure: true
     }
-
+    
     return res.status(200)
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
@@ -226,7 +223,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     return res.status(200)
-        .json(200, req.user, "current usr fetched successfully")
+        .json(200, req.user, "current user fetched successfully")
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -315,7 +312,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 // const getUserChannelProfile = asyncHandler(async (req, res) => {
 //     const { username } = req.params
-
+// 
 //     if (!username?.trim()) {
 //         throw new ApiError(400, "Username is missing")
 //     }

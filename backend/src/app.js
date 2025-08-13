@@ -24,9 +24,11 @@ app.use(cookieParser())
 
 //routes import
 import userRouter from './routes/user.routes.js'
+import adminRouter from './routes/admin.routes.js'
 
 //routes declaration
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/admin", adminRouter);
 
  // /users is used as a prefix and further we can add more routes under userRoute 
 export {app};

@@ -29,7 +29,6 @@ const userSchema = new Schema(
         },
         avatar: {
             type: String, //cloudinary url
-            required: true,
         },
         subscriptions: [
             {
@@ -41,6 +40,11 @@ const userSchema = new Schema(
             type: String,
             required: [true, 'password is required']
 
+        },
+        role: {
+            type: String,
+            enum: ["user", "admin"],
+            default: "user"
         },
         refreshToken: {
             type: String
