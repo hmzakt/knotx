@@ -1,4 +1,4 @@
-import mongoose, { Schema, trusted } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const subscriptionSchema = new Schema(
     {
@@ -14,7 +14,9 @@ const subscriptionSchema = new Schema(
         },
         itemId: {
             type: Schema.Types.ObjectId,
-            required: true
+            required: function () {
+                return this.type !== "all-access";
+            }
         },
         startDate: {
             type: Date,
@@ -30,7 +32,7 @@ const subscriptionSchema = new Schema(
             default: "active"
         }
     },
-    { timestamps: True }
+    { timestamps: true }
 );
 
-export const Subscription = mongoose.model("Subscription", subscriptionSchema)
+export const Subscription = mongoose.model("Subscription", subscriptionSchema);

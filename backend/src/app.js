@@ -1,6 +1,7 @@
 import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser";
+import { startSubscriptionExpiryJob } from "./scheduler/subscriptionExpiry.js";
 
 
 const app = express()
@@ -25,10 +26,19 @@ app.use(cookieParser())
 //routes import
 import userRouter from './routes/user.routes.js'
 import adminRouter from './routes/admin.routes.js'
+import subscriptionRouter from './routes/subscription.routes.js'
+
 
 //routes declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/subscriptions", subscriptionRouter);
 
- // /users is used as a prefix and further we can add more routes under userRoute 
+
+
+
+
+
+ //runs to clean database every midnight for expired subscription
+ startSubscriptionExpiryJob();
 export {app};
