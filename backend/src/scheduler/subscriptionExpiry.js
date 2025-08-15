@@ -1,6 +1,6 @@
 
 import cron from "node-cron"
-import { Subscription } from "../models/subscription.model";
+import { Subscription } from "../models/subscription.model.js";
 
 
 export const startSubscriptionExpiryJob = () => {

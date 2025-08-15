@@ -1,6 +1,6 @@
-import { Paper } from "../models/papers.model";
-import { Subscription } from "../models/subscription.model";
-import { TestSeries } from "../models/testSeries.model";
+import { Paper } from "../models/papers.model.js";
+import { Subscription } from "../models/subscription.model.js";
+import { TestSeries } from "../models/testSeries.model.js";
 
 // creates a new subscription 
 export const createSubscription = async (req, res) => {

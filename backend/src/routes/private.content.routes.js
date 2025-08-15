@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware";
-import { requireSubscriptionForPaper, requireSubscriptionForSeries } from "../middlewares/subscription.middleware";
-import { getPaperWithQuestions, getTestSeriesWithPapers } from "../controllers/content.controller";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { requireSubscriptionForPaper, requireSubscriptionForSeries } from "../middlewares/subscription.middleware.js";
+import { getPaperWithQuestions, getTestSeriesWithPapers } from "../controllers/content.controller.js";
 
 const router = Router();
 

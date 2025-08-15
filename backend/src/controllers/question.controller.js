@@ -1,5 +1,5 @@
-import { Paper } from "../models/papers.model";
-import { Question } from "../models/question.model";
+import { Paper } from "../models/papers.model.js";
+import { Question } from "../models/question.model.js";
 
 
 export const updateQuestion = async (req, res) => {

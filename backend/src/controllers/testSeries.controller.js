@@ -1,5 +1,5 @@
-import { Paper } from "../models/papers.model";
-import { TestSeries } from "../models/testSeries.model";
+import { Paper } from "../models/papers.model.js";
+import { TestSeries } from "../models/testSeries.model.js";
 
 
 export const addPaperToTestSeries = async(req, res) => {

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { listPapers, listTestSeries } from "../controllers/content.controller";
+import { listPapers, listTestSeries } from "../controllers/content.controller.js";
 
 
 const router = Router();

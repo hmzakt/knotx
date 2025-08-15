@@ -3,10 +3,10 @@
 
 // PUBLIC apis so that we can dispaly the test series and papers
 
-import { Paper } from "../models/papers.model";
-import { TestSeries } from "../models/testSeries.model";
-import { ApiError } from "../utils/apiError";
-import { ApiResponse } from "../utils/apiResponse";
+import { Paper } from "../models/papers.model.js";
+import { TestSeries } from "../models/testSeries.model.js";
+import { ApiError } from "../utils/apiError.js";
+import { ApiResponse } from "../utils/apiResponse.js";
 
 export const listPapers = async(req, res) => {
     try{

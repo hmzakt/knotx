@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware";
-import { createSubscription, deleteSubscription, getMySubscription } from "../controllers/subscription.controller";
-import { checkAccess } from "../middlewares/checkAccess.middleware";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { createSubscription, deleteSubscription, getMySubscription } from "../controllers/subscription.controller.js";
+import { checkAccess } from "../middlewares/checkAccess.middleware.js";
 
 const router = Router();
 

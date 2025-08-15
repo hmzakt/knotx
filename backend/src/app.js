@@ -36,7 +36,7 @@ import { authLimiter, adminLimiter } from './security/ratelimiting.js'
 
 //route security
 app.use("/api/v1/users", authLimiter);
-app.use("/api/v1/admin", adminLimiter);
+// app.use("/api/v1/admin", adminLimiter);
 
 
 //routes declaration

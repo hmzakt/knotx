@@ -1,4 +1,4 @@
-import { Subscription } from "../models/subscription.model";
+import { Subscription } from "../models/subscription.model.js";
 
 
 export const checkAccess = async(req, res, next) => {
