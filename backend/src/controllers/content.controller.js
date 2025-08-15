@@ -1,6 +1,3 @@
-
-
-
 // PUBLIC apis so that we can dispaly the test series and papers
 
 import { Paper } from "../models/papers.model.js";
@@ -49,27 +46,46 @@ export const listTestSeries = async(req, res) => {
 // get a paper with question
 
 export const getPaperWithQuestions = async (req, res) => {
-    try {
-        const paperId = req.params.id;
+  try {
+    const paperId = req.params.id;
+    
+    const paper = await Paper.findById(paperId).populate({
+      path: "questions",
+      select: "text options difficulty domain createdAt updatedAt"
+    });
 
-        const paper = await Paper.findById(paperId).populate({
-            path : "questions",
-            select : "text options explanation difficulty domain createdAt updatedAt"
-        });
-
-        if(!paper) {
-            return res.status(404).json(new ApiError(404, "message not found"));
-        }
-
-        return res.status(200).json(
-            new ApiResponse(200, paper, "paper fetched")
-        )
+    if (!paper) {
+      return res.status(404).json(new ApiError(404, "Paper not found"));
     }
-    catch(err){
-        console.error("error fetching getQuestions with paper :", err);
-        return res.status(500).json(new ApiError(500, "Server error while fetching paper with questions"))
-    }
+
+    // Sanitize: ensure options contain only optionText (no isCorrect) and drop explanations
+    const sanitizedQuestions = paper.questions.map(q => ({
+      _id: q._id,
+      text: q.text,
+      options: q.options.map(opt => ({ optionText: opt.optionText })),
+      difficulty: q.difficulty,
+      domain: q.domain,
+      createdAt: q.createdAt,
+      updatedAt: q.updatedAt
+    }));
+
+    const sanitizedPaper = {
+      _id: paper._id,
+      title: paper.title,
+      subject: paper.subject,
+      price: paper.price,
+      createdAt: paper.createdAt,
+      updatedAt: paper.updatedAt,
+      questions: sanitizedQuestions
+    };
+
+    return res.status(200).json(new ApiResponse(200, sanitizedPaper, "Paper fetched"));
+  } catch (err) {
+    console.error("getPaperWithQuestions error:", err);
+    return res.status(500).json(new ApiError(500, "Server error while fetching paper with questions"));
+  }
 };
+
 
 export const getTestSeriesWithPapers = async(req, res)=>{
     try {
