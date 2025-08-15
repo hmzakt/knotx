@@ -35,4 +35,17 @@ const subscriptionSchema = new Schema(
     { timestamps: true }
 );
 
+/**
+ * INDEXES
+ * 1. Prevents multiple active subs of the same type for the same user/item.
+ * 2. For all-access, itemId is null — still prevents multiple active all-access subs.
+ */
+subscriptionSchema.index(
+    { userId: 1, type: 1, itemId: 1, status: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { status: "active" }
+    }
+);
+
 export const Subscription = mongoose.model("Subscription", subscriptionSchema);

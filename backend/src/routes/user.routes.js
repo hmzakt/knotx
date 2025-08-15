@@ -32,6 +32,6 @@ router.route("/update-account").patch(verifyJWT, updateAccountDetails)
 
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"),updateUserAvatar)
 router.route("/current-user").get(verifyJWT, getCurrentUser)
-// router.route("/c/:username").get(verifyJWT, getUserChannelProfile)   //since we are using params in the function
+
 
 export default router

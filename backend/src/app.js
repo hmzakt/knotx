@@ -2,18 +2,21 @@ import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser";
 import { startSubscriptionExpiryJob } from "./scheduler/subscriptionExpiry.js";
+import helmet from "helmet"
+import compression from "compression"
+
 
 
 const app = express()
 
 // app.use(cors())
-
+app.use(helmet());
 app.use(cors({
     origin: process.env.CORS_ORIGIN || "*", // Add fallback
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] // Explicitly allow methods
 }))
-
+app.use(compression());
 
 
 app.use(express.json({
@@ -27,14 +30,21 @@ app.use(cookieParser())
 import userRouter from './routes/user.routes.js'
 import adminRouter from './routes/admin.routes.js'
 import subscriptionRouter from './routes/subscription.routes.js'
+import publicContentRouter from './routes/public.content.routes.js'
+import protectedContentRouter from './routes/private.content.routes.js'
+import { authLimiter, adminLimiter } from './security/ratelimiting.js'
+
+//route security
+app.use("/api/v1/users", authLimiter);
+app.use("/api/v1/admin", adminLimiter);
 
 
 //routes declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
-
-
+app.use("/api/v1/public", publicContentRouter);
+app.use("/api/v1/private",protectedContentRouter);
 
 
 
