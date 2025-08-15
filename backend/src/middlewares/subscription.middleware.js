@@ -56,10 +56,10 @@ export const requireSubscriptionForPaper = async (req, res, next) => {
 
     return res
       .status(403)
-      .json(new ApiError(403, "No active subscription for this paper"));
+      .json({ message: "No active subscription for this paper" });
   } catch (err) {
     console.error("requireSubscriptionForPaper error:", err);
-    return res.status(500).json(new ApiError(500, "Server error"));
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -96,9 +96,9 @@ export const requireSubscriptionForSeries = async (req, res, next) => {
 
     return res
       .status(403)
-      .json(new ApiError(403, "No active subscription for this test series"));
+      .json({ message: "No active subscription for this test series" });
   } catch (err) {
     console.error("requireSubscriptionForSeries error:", err);
-    return res.status(500).json(new ApiError(500, "Server error"));
+    return res.status(500).json({ message: "Server error" });
   }
 };

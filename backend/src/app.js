@@ -46,9 +46,7 @@ app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/public", publicContentRouter);
 app.use("/api/v1/private",protectedContentRouter);
 
+//runs to clean database every midnight for expired subscription
+startSubscriptionExpiryJob();
 
-
-
- //runs to clean database every midnight for expired subscription
- startSubscriptionExpiryJob();
 export {app};

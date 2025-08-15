@@ -146,7 +146,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     return res.status(200)
         .clearCookie("accessToken", options)
         .clearCookie("refreshToken", options)
-        .json(new ApiResponse(200), {}, "User Logged Out Successfully")
+        .json(new ApiResponse(200, {}, "User Logged Out Successfully")) //edited
 })
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
@@ -217,7 +217,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     return res.status(200)
-        .json(200, req.user, "current user fetched successfully")
+        .json(new ApiResponse(200, req.user, "current user fetched successfully"))
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -226,20 +226,19 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are mandatory")
     }
 
-    User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
                 fullname,
                 email: email,
-
             }
         },
         { new: true }
     ).select("-password")
 
     return res.status(200)
-        .json(200, User, "Account details updated successfully")
+        .json(new ApiResponse(200, updatedUser, "Account details updated successfully"))
 })
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
@@ -277,21 +276,21 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverLocalPath = (req.file?.path)
 
-    if (!avatarLocalPath) {
+    if (!coverLocalPath) {
         throw new ApiError(400, "Cover Image file is missing")
     }
 
-    const coverImage = await uploadOnCloudinary(avatarLocalPath)
+    const coverImage = await uploadOnCloudinary(coverLocalPath)
 
     if (!coverImage.url) {
-        throw new ApiError(400, "Error while uploading on avatar")
+        throw new ApiError(400, "Error while uploading cover image")
     }
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
-                coverimage: coverImage.url
+                coverImage: coverImage.url
             }
         },
         { new: true }
