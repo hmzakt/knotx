@@ -4,7 +4,7 @@ We are storing frozen sub-schmeas of each question( text + options + correctInde
 So that even if question is edited later, scoring is still proper
 */
 
-import mongoose, { startSession } from "mongoose";
+import mongoose from "mongoose";
 
 // Option snapshot schema does not contains isCorrect
 

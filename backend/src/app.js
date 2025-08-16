@@ -33,6 +33,7 @@ import subscriptionRouter from './routes/subscription.routes.js'
 import publicContentRouter from './routes/public.content.routes.js'
 import protectedContentRouter from './routes/private.content.routes.js'
 import { authLimiter, adminLimiter } from './security/ratelimiting.js'
+import attemptsRouter from "./routes/attempts.route.js"
 
 //route security
 app.use("/api/v1/users", authLimiter);
@@ -45,6 +46,9 @@ app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/public", publicContentRouter);
 app.use("/api/v1/private",protectedContentRouter);
+
+
+app.use("/api/v1/attempts", attemptsRouter);
 
 //runs to clean database every midnight for expired subscription
 startSubscriptionExpiryJob();

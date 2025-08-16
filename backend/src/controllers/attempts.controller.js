@@ -14,7 +14,7 @@ Return sanitized questions to client, that is correct index must be hideen
 import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { Paper } from "../models/papers.model.js";
-import { Attempt } from "../models/attempt.model.js";
+import { Attempt } from "../models/attempts.model.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 
 export const startAttempt = async (req, res) => {
