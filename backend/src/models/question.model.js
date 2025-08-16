@@ -38,6 +38,9 @@ const questionSchema = new Schema(
         domain: {
             type: String,
             required: true
+        },
+        supportingImage : {
+            type :String
         }
     },
     { timestamps: true }
