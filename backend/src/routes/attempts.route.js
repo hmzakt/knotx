@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware";
-import { requireSubscriptionForPaper } from "../middlewares/subscription.middleware";
-import { answerQuestion, getAttempt, listMyAttempts, startAttempt, submitAttempt } from "../controllers/attempts.controller";
-import { requireAttemptOwner } from "../middlewares/attempts.middleware";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { requireSubscriptionForPaper } from "../middlewares/subscription.middleware.js";
+import { answerQuestion, getAttempt, listMyAttempts, startAttempt, submitAttempt } from "../controllers/attempts.controller.js";
+import { requireAttemptOwner } from "../middlewares/attempts.middleware.js";
 
 
 const router = Router();

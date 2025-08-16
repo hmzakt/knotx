@@ -1,6 +1,5 @@
 import { Subscription } from "../models/subscription.model.js";
 
-
 export const checkAccess = async(req, res, next) => {
     try{
         const userId = req.user._id;

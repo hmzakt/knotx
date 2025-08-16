@@ -1,7 +1,6 @@
 // middlewares/subscription.middleware.js
 import { Subscription } from "../models/subscription.model.js";
 import { TestSeries } from "../models/testSeries.model.js";
-import { ApiError } from "../utils/apiError.js";
 
 /**
  * Require an active subscription that grants access to a specific PAPER.
