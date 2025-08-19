@@ -17,7 +17,7 @@ router.post("/:attemptId/answer", verifyJWT, requireAttemptOwner, answerQuestion
 router.post("/:attemptId/submit", verifyJWT, requireAttemptOwner, submitAttempt);
 
 // Get Attempt
-router.get(":/attemptId", verifyJWT, requireAttemptOwner, getAttempt);
+router.get("/:attemptId", verifyJWT, requireAttemptOwner, getAttempt);
 
 //List user's attempts
 router.get("/", verifyJWT, listMyAttempts);
