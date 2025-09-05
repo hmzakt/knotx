@@ -53,4 +53,18 @@ app.use("/api/v1/attempts", attemptsRouter);
 //runs to clean database every midnight for expired subscription
 startSubscriptionExpiryJob();
 
+
+
+// payment wiring remove comment after validating
+// app.js (additions)
+// import promoRouter from "./routes/promocode.routes.js";
+// import paymentRouter from "./routes/payment.routes.js";
+
+// // ... existing middlewares (helmet, cors, compression, json, urlencoded, cookieParser)
+
+// // Mount routes (order doesn’t matter much because webhook uses route-level raw parser)
+// app.use("/api/v1/promos", promoRouter);
+// app.use("/api/v1/payments", paymentRouter);
+
+
 export {app};

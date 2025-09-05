@@ -22,7 +22,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 }
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { fullname, email, username, password} = req.body;
+    const {fullname, email, username, password} = req.body;
 
     // 1. Basic validations
     if ([fullname, email, username, password].some((field) => field?.trim() === "")) {
