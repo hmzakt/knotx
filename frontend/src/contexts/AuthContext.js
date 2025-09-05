@@ -1,11 +1,16 @@
+"use client"
 import { useState, useContext, createContext, useEffect } from "react";
-import { getToken, removeToken } from "../lib/auth";
+import { getToken, removeToken, setToken } from "../lib/auth";
 import apiClient from "../lib/api";
 
 const AuthContext = createContext();
 
 export function useAuth() {
-    return useContext(AuthContext)
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 }
 
 export function AuthProvider({children}){
@@ -14,9 +19,7 @@ export function AuthProvider({children}){
 
     const login = (userData, token) => {
         setUser(userData);
-        if(typeof window !== 'undefined'){
-            localStorage.setItem('token', token)
-        }
+        setToken(token); // Use the proper setToken function
     };
 
     const logout = () => {
@@ -30,7 +33,7 @@ export function AuthProvider({children}){
             const token = getToken();
             if(token){
                 try{
-                    const response = await apiClient.get('/user/current-user');
+                    const response = await apiClient.get('/users/current-user');
                     setUser(response.data.data); // Backend returns data in response.data.data
                 }
                 catch(error){

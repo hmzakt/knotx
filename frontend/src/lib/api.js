@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // request interceptor
 const apiClient = axios.create({
-    baseURL : process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1'
+    baseURL : process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1'
 });
 
 apiClient.interceptors.request.use(

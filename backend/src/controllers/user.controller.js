@@ -88,8 +88,17 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     const user = await User.findOne({
-        $or: [{ username }, { email }]
+        $or: [
+            { username: username?.toLowerCase() }, 
+            { email: email?.toLowerCase() }
+        ]
     })
+
+    console.log("User lookup result:", user ? "User found" : "User not found");
+    console.log("Search criteria:", { 
+        username: username?.toLowerCase(), 
+        email: email?.toLowerCase() 
+    });
 
     if (!user) {
         throw new ApiError(404, "User does not exist")
