@@ -1,4 +1,3 @@
-//client side implementations for now
 export const setToken = (token) =>{
     if(typeof window !=='undefined'){
         localStorage.setItem('token', token);

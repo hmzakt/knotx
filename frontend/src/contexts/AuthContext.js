@@ -34,7 +34,7 @@ export function AuthProvider({children}){
             if(token){
                 try{
                     const response = await apiClient.get('/users/current-user');
-                    setUser(response.data.data); // Backend returns data in response.data.data
+                    setUser(response.data.data); 
                 }
                 catch(error){
                     console.error('Error loading user', error);

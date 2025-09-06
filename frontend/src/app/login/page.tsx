@@ -1,19 +1,43 @@
-"use client";   // 👈 Add this at the very top
+"use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import Link from "next/link";
-import { useAuth } from "../contexts/AuthContext";
-import apiClient from "../lib/api";
+import { useAuth } from "../../contexts/AuthContext";
+import apiClient from "../../lib/api";
+
+interface LoginFormData {
+  email: string;
+  password: string;
+}
+
+interface ErrorResponse {
+  response?: {
+    status: number;
+    data?: {
+      message?: string;
+    };
+  };
+}
+
+interface ErrorInfo {
+  message: string;
+  type: string;
+}
 
 export default function Login() {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { 
+    register, 
+    handleSubmit, 
+    formState: { errors } 
+  } = useForm<LoginFormData>();
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [errorType, setErrorType] = useState(""); // Track error type for better styling
+  const [errorType, setErrorType] = useState(""); 
   const { login } = useAuth();
 
-  const getErrorMessage = (error) => {
+  const getErrorMessage = (error: ErrorResponse): ErrorInfo => {
     // Handle network errors
     if (!error.response) {
       return {
@@ -24,8 +48,7 @@ export default function Login() {
 
     const statusCode = error.response.status;
     const backendMessage = error.response.data?.message;
-
-    // Map backend error messages to user-friendly messages
+    
     switch (statusCode) {
       case 400:
         return {
@@ -65,7 +88,7 @@ export default function Login() {
     }
   };
 
-  const onSubmit = async (data) => {
+  const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
     setIsLoading(true);
     setError("");
     setErrorType("");
@@ -77,10 +100,10 @@ export default function Login() {
       const { user, accessToken } = response.data.data;
       login(user, accessToken);
       window.location.href = "/dashboard";
-    } catch (error) {
+    } catch (error: unknown) {
       console.log("Login error:", error);
-      console.log("Error data:", error.response?.data);
-      const errorInfo = getErrorMessage(error);
+      console.log("Error data:", (error as ErrorResponse).response?.data);
+      const errorInfo = getErrorMessage(error as ErrorResponse);
       setError(errorInfo.message);
       setErrorType(errorInfo.type);
     } finally {

@@ -1,18 +1,51 @@
-"use client"
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+"use client";
+
+import { useState, ChangeEvent } from 'react';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import Link from 'next/link';
-import { useAuth } from '../contexts/AuthContext';
-import apiClient from '../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
+import apiClient from '../../lib/api';
+
+interface RegisterFormData {
+  fullname: string;
+  email: string;
+  username: string;
+  password: string;
+}
+
+interface ApiResponse {
+  data: {
+    data: any; // Replace 'any' with your actual user type if known
+  };
+}
+
+interface ErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 export default function Register() {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { 
+    register, 
+    handleSubmit, 
+    formState: { errors } 
+  } = useForm<RegisterFormData>();
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const { login } = useAuth();
 
-  const onSubmit = async (data) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAvatarFile(e.target.files[0]);
+    }
+  };
+
+  const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
     setIsLoading(true);
     setError('');
 
@@ -29,7 +62,7 @@ export default function Register() {
       }
 
       // Call your backend register endpoint
-      const response = await apiClient.post('/users/register', formData, {
+      const response = await apiClient.post<ApiResponse>('/users/register', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -42,9 +75,10 @@ export default function Register() {
       // Redirect to login page with success message
       window.location.href = '/login?message=Registration successful. Please login to continue.';
 
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.message || 'Failed to create an account. Please try again.');
+      const errorMessage = (err as ErrorResponse).response?.data?.message || 'Failed to create an account. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +108,7 @@ export default function Register() {
                 type="file"
                 id="avatar"
                 accept="image/*"
-                onChange={(e) => setAvatarFile(e.target.files[0])}
+                onChange={handleFileChange}
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
               />
             </div>
