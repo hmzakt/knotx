@@ -19,7 +19,7 @@ const promoCodeSchema = new Schema(
       trim: true,
       uppercase: true
     },
-    // % off (1..100). Keep it simple for now; you can add fixed-amount later if needed
+    
     discountPercent: {
       type: Number,
       required: true,

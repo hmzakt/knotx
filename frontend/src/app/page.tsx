@@ -1,10 +1,9 @@
-import Image from "next/image";
-import Register from "./register/page"
+import PixelHero from "../components/PixelHero";
 
 export default function Home() {
   return (
-    <div>
-      <Register/>
+    <div className="bg-zinc-950">
+      <PixelHero/>
     </div>
   );
 }

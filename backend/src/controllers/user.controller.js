@@ -229,6 +229,54 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, req.user, "current user fetched successfully"))
 })
 
+const getUserSubscriptions = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    
+    // Get user with populated subscriptions
+    const user = await User.findById(userId)
+        .populate({
+            path: 'subscriptions',
+            populate: [
+                {
+                    path: 'itemId',
+                    model: 'Paper',
+                    select: 'title subject price'
+                },
+                {
+                    path: 'itemId', 
+                    model: 'TestSeries',
+                    select: 'title description price papers'
+                }
+            ]
+        })
+        .select('subscriptions')
+        .lean();
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    // Categorize subscriptions by type
+    const now = new Date();
+    const activeSubscriptions = user.subscriptions.filter(sub => 
+        sub.status === 'active' && new Date(sub.endDate) > now
+    );
+
+    const categorizedSubscriptions = {
+        allAccess: activeSubscriptions.filter(sub => sub.type === 'all-access'),
+        singlePapers: activeSubscriptions.filter(sub => sub.type === 'single-paper'),
+        testSeries: activeSubscriptions.filter(sub => sub.type === 'test-series')
+    };
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            subscriptions: categorizedSubscriptions,
+            hasAllAccess: categorizedSubscriptions.allAccess.length > 0,
+            hasAnySubscription: activeSubscriptions.length > 0
+        }, "User subscriptions fetched successfully")
+    );
+})
+
 const updateAccountDetails = asyncHandler(async (req, res) => {
     const { fullname, email } = req.body
     if (!fullname || !email) {
@@ -388,6 +436,7 @@ export {
     refreshAccessToken,
     changeCurrentPassword,
     getCurrentUser,
+    getUserSubscriptions,
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage
