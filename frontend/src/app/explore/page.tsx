@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import SubscriptionStatus from '@/components/SubscriptionStatus';
+import PaymentModal from '@/components/PaymentModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useContent } from '@/hooks/useContent';
 
@@ -12,19 +13,67 @@ type TabType = 'papers' | 'test-series';
 export default function ExplorePage() {
   const [activeTab, setActiveTab] = useState<TabType>('papers');
   const [searchQuery, setSearchQuery] = useState('');
+  const [paymentModal, setPaymentModal] = useState<{
+    isOpen: boolean;
+    data: any;
+  }>({ isOpen: false, data: null });
+  
   const { user } = useAuth();
   const { papers, testSeries, loading, error, refetch } = useContent();
 
-  const handleBuyNow = (type: 'paper' | 'test-series' | 'all-access', itemId?: string) => {
+  const handleBuyNow = (type: 'single-paper' | 'test-series' | 'all-access', itemId?: string, itemData?: any) => {
     if (!user) {
       // Redirect to login if not authenticated
       window.location.href = '/login';
       return;
     }
     
-    // TODO: Implement payment flow
-    console.log('Buy now clicked:', { type, itemId });
-    alert(`Buy ${type} functionality will be implemented soon!`);
+    // Validate required data
+    if (type !== 'all-access' && (!itemId || !itemData)) {
+      console.error('Missing required data for payment:', { type, itemId, itemData });
+      return;
+    }
+    
+    // Prepare payment data based on type
+    let paymentData: any = {
+      type,
+      itemId,
+      baseAmount: 0,
+      itemName: '',
+      itemDescription: '',
+      durationDays: 30
+    };
+
+    if (type === 'all-access') {
+      paymentData = {
+        ...paymentData,
+        baseAmount: 99900, // ₹999 in paise
+        itemName: 'All-Access Subscription',
+        itemDescription: 'Unlimited access to all papers and test series for 30 days',
+        durationDays: 30
+      };
+    } else if (type === 'single-paper' && itemData) {
+      paymentData = {
+        ...paymentData,
+        baseAmount: itemData.price * 100, // Convert to paise
+        itemName: itemData.title,
+        itemDescription: `Paper: ${itemData.subject}`,
+        durationDays: 30
+      };
+    } else if (type === 'test-series' && itemData) {
+      paymentData = {
+        ...paymentData,
+        baseAmount: itemData.price * 100, // Convert to paise
+        itemName: itemData.title,
+        itemDescription: `Test Series: ${itemData.papersCount || 0} papers`,
+        durationDays: 30
+      };
+    }
+
+    setPaymentModal({
+      isOpen: true,
+      data: paymentData
+    });
   };
 
   const formatPrice = (price: number) => {
@@ -194,7 +243,7 @@ export default function ExplorePage() {
                       {formatPrice(paper.price)}
                     </div>
                     <Button
-                      onClick={() => handleBuyNow('paper', paper._id)}
+                      onClick={() => handleBuyNow('single-paper', paper._id, paper)}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg group-hover:scale-105 transition-transform duration-200"
                     >
                       Buy Now
@@ -242,7 +291,7 @@ export default function ExplorePage() {
                       {formatPrice(series.price)}
                     </div>
                     <Button
-                      onClick={() => handleBuyNow('test-series', series._id)}
+                      onClick={() => handleBuyNow('test-series', series._id, series)}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg group-hover:scale-105 transition-transform duration-200"
                     >
                       Buy Now
@@ -260,6 +309,15 @@ export default function ExplorePage() {
           )}
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {paymentModal.isOpen && (
+        <PaymentModal
+          isOpen={paymentModal.isOpen}
+          onClose={() => setPaymentModal({ isOpen: false, data: null })}
+          paymentData={paymentModal.data}
+        />
+      )}
     </div>
   );
 }

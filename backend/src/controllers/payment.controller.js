@@ -2,6 +2,7 @@
 import crypto from "crypto";
 import { razorpay } from "../config/razorpay.js";
 import { Subscription } from "../models/subscription.model.js";
+import { User } from "../models/user.model.js";
 import { Paper } from "../models/papers.model.js";
 import { TestSeries } from "../models/testSeries.model.js";
 import { markPromoUsed } from "./promocode.controller.js";
@@ -21,7 +22,10 @@ import { markPromoUsed } from "./promocode.controller.js";
 export const createRazorpayOrder = async (req, res) => {
   try {
     const user = req.user;
-    const { type, itemId, baseAmount, currency = "INR", promoCode, durationDays = 30 } = req.body;
+    let { type, itemId, baseAmount, currency = "INR", promoCode, durationDays = 30 } = req.body;
+
+    // Normalize type to expected enum
+    if (type === 'paper') type = 'single-paper';
 
     // basic validation
     if (!type) return res.status(400).json({ success: false, message: "type is required" });
@@ -127,6 +131,15 @@ export const verifyRazorpayPayment = async (req, res) => {
       endDate: end,
       status: "active"
     });
+
+    // Best-effort linking to user's subscriptions array if such linkage is used elsewhere
+    try {
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { subscriptions: subscription._id }
+      }, { new: false });
+    } catch (linkErr) {
+      console.warn("Could not link subscription to user.subscriptions array:", linkErr?.message);
+    }
 
     // mark promo usage
     if (promoCode) {

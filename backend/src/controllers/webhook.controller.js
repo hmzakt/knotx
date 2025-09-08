@@ -1,6 +1,7 @@
 // controllers/webhook.controller.js
 import crypto from "crypto";
 import { Subscription } from "../models/subscription.model.js";
+import { User } from "../models/user.model.js";
 import { markPromoUsed } from "./promocode.controller.js";
 
 /**
@@ -30,7 +31,9 @@ export const handleRazorpayWebhook = async (req, res) => {
       const payment = event?.payload?.payment?.entity;
       const notes = order?.notes || {};
       const userId = notes.userId;
-      const type = notes.type;
+      // Normalize incoming type
+      const typeRaw = notes.type;
+      const type = (typeRaw === 'paper') ? 'single-paper' : typeRaw;
       const itemId = notes.itemId || null;
       const promoCode = notes.promoCode || "";
       const durationDays = Number(notes.durationDays || 30);
@@ -48,7 +51,7 @@ export const handleRazorpayWebhook = async (req, res) => {
           endDate: { $gte: start }
         });
         if (!dup) {
-          await Subscription.create({
+          const created = await Subscription.create({
             userId,
             type,
             itemId: type === "all-access" ? null : itemId,
@@ -56,6 +59,15 @@ export const handleRazorpayWebhook = async (req, res) => {
             endDate: end,
             status: "active"
           });
+
+          // Best-effort link to user's subscriptions array
+          try {
+            await User.findByIdAndUpdate(userId, {
+              $addToSet: { subscriptions: created._id }
+            }, { new: false });
+          } catch (linkErr) {
+            console.warn("[webhook] Could not link subscription to user:", linkErr?.message);
+          }
         }
 
         if (promoCode) {

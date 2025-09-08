@@ -3,6 +3,7 @@ import { ApiError } from "../utils/apiError.js";
 import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/apiResponse.js"
+import { Subscription } from "../models/subscription.model.js"
 import jwt from "jsonwebtoken"
 
 const generateAccessAndRefreshToken = async (userId) => {
@@ -231,48 +232,42 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const getUserSubscriptions = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    
-    // Get user with populated subscriptions
-    const user = await User.findById(userId)
-        .populate({
-            path: 'subscriptions',
-            populate: [
-                {
-                    path: 'itemId',
-                    model: 'Paper',
-                    select: 'title subject price'
-                },
-                {
-                    path: 'itemId', 
-                    model: 'TestSeries',
-                    select: 'title description price papers'
-                }
-            ]
-        })
-        .select('subscriptions')
-        .lean();
 
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }
-
-    // Categorize subscriptions by type
+    // Fetch active subscriptions by type; avoid relying on User.subscriptions linkage
     const now = new Date();
-    const activeSubscriptions = user.subscriptions.filter(sub => 
-        sub.status === 'active' && new Date(sub.endDate) > now
-    );
+
+    const [
+        allAccessSubs,
+        singlePaperSubs,
+        testSeriesSubs
+    ] = await Promise.all([
+        Subscription.find({ userId, type: 'all-access', status: 'active', endDate: { $gt: now } })
+            .sort({ createdAt: -1 })
+            .lean(),
+        Subscription.find({ userId, type: 'single-paper', status: 'active', endDate: { $gt: now } })
+            .populate({ path: 'itemId', model: 'Paper', select: 'title subject price' })
+            .sort({ createdAt: -1 })
+            .lean(),
+        Subscription.find({ userId, type: 'test-series', status: 'active', endDate: { $gt: now } })
+            .populate({ path: 'itemId', model: 'TestSeries', select: 'title description price papers' })
+            .sort({ createdAt: -1 })
+            .lean()
+    ]);
 
     const categorizedSubscriptions = {
-        allAccess: activeSubscriptions.filter(sub => sub.type === 'all-access'),
-        singlePapers: activeSubscriptions.filter(sub => sub.type === 'single-paper'),
-        testSeries: activeSubscriptions.filter(sub => sub.type === 'test-series')
+        allAccess: allAccessSubs,
+        singlePapers: singlePaperSubs,
+        testSeries: testSeriesSubs
     };
+
+    const hasAllAccess = allAccessSubs.length > 0;
+    const hasAnySubscription = (allAccessSubs.length + singlePaperSubs.length + testSeriesSubs.length) > 0;
 
     return res.status(200).json(
         new ApiResponse(200, {
             subscriptions: categorizedSubscriptions,
-            hasAllAccess: categorizedSubscriptions.allAccess.length > 0,
-            hasAnySubscription: activeSubscriptions.length > 0
+            hasAllAccess,
+            hasAnySubscription
         }, "User subscriptions fetched successfully")
     );
 })
