@@ -19,7 +19,9 @@ export function AuthProvider({children}){
 
     const login = (userData, token) => {
         setUser(userData);
-        setToken(token); // Use the proper setToken function
+        if (token) {
+            setToken(token); // Use the proper setToken function
+        }
     };
 
     const logout = () => {
@@ -30,18 +32,25 @@ export function AuthProvider({children}){
     //checking if user is already logged in
     useEffect(() => {
         async function loadUserFromToken(){
-            const token = getToken();
-            if(token){
-                try{
-                    const response = await apiClient.get('/users/current-user');
-                    setUser(response.data.data); 
+            try{
+                const token = getToken();
+                if (!token) {
+                    setLoading(false);
+                    return;
                 }
-                catch(error){
-                    console.error('Error loading user', error);
-                    removeToken();
-                }
+                
+                const response = await apiClient.get('/users/current-user');
+                setUser(response.data.data); 
             }
-            setLoading(false);
+            catch(error){
+                console.error('Error loading user', error);
+                // Clear any local token if it exists
+                removeToken();
+                setUser(null);
+            }
+            finally {
+                setLoading(false);
+            }
         }
         loadUserFromToken()
     }, [])
@@ -55,7 +64,7 @@ export function AuthProvider({children}){
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 }

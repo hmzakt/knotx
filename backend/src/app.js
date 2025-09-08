@@ -12,7 +12,7 @@ const app = express()
 // app.use(cors())
 app.use(helmet());
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || "*", // Add fallback
+    origin: process.env.CORS_ORIGIN, // Add fallback
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] // Explicitly allow methods
 }))

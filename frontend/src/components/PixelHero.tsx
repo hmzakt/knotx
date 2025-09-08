@@ -1,7 +1,7 @@
 'use client';
 import PixelBlast from './ui/pixelBlast';
 import React from 'react'
-import Button from './ui/button';
+import {Button} from './ui/button';
 
 export default function PixelHero() {
     return (
