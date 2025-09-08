@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import apiClient from '../lib/api';
+import { getToken } from '../lib/auth';
 
 interface Subscription {
   _id: string;
@@ -31,18 +32,41 @@ export const useSubscription = (): UseSubscriptionReturn => {
     try {
       setLoading(true);
       setError(null);
+      const token = getToken();
+      if (!token) {
+        setSubscriptions([]);
+        return;
+      }
       const response = await apiClient.get('/subscriptions/mySubscriptions');
       setSubscriptions(response.data || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch subscriptions');
       console.error('Error fetching subscriptions:', err);
+      setSubscriptions([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'token') {
+        fetchSubscriptions();
+      }
+    };
+
+    // initial load
     fetchSubscriptions();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorage);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleStorage);
+      }
+    };
   }, []);
 
   // Check if user has any active subscription

@@ -1,6 +1,7 @@
 // PUBLIC apis so that we can dispaly the test series and papers
 
 import { Paper } from "../models/papers.model.js";
+import { Question } from "../models/question.model.js";
 import { TestSeries } from "../models/testSeries.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
@@ -44,6 +45,21 @@ export const listTestSeries = async(req, res) => {
 
 ///// Subscriptions required
 // get a paper with question
+
+export const listQuestions = async (req, res) => {
+  try {
+    const questions = await Question.find({})
+      .select("text options difficulty domain createdAt updatedAt")
+      .lean();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, questions, "Questions listed"));
+  } catch (err) {
+    console.error("list questions error:", err);
+    return res.status(500).json(new ApiError(500, "Server error"));
+  }
+};
 
 export const getPaperWithQuestions = async (req, res) => {
   try {

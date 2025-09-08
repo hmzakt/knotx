@@ -12,9 +12,9 @@ const app = express()
 // app.use(cors())
 app.use(helmet());
 app.use(cors({
-    origin: process.env.CORS_ORIGIN, // Add fallback
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] // Explicitly allow methods
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }))
 app.use(compression());
 

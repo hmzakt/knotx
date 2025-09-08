@@ -74,7 +74,7 @@ export function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-popover/95 backdrop-blur-sm border-border/50">
                   <DropdownMenuItem asChild>
-                    <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
+                    <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
                       <User className="h-4 w-4" />
                       Profile
                     </Link>

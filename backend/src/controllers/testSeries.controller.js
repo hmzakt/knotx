@@ -13,7 +13,10 @@ export const addPaperToTestSeries = async(req, res) => {
         const paper = await Paper.findById(paperId);
         if(!paper) return res.status(404).json({message : "Paper not found"})
 
-        testSeries.papers.push(paperId);
+        // idempotent add
+        if (!testSeries.papers.some(p => p.toString() === paperId)) {
+            testSeries.papers.push(paperId);
+        }
         await testSeries.save();
 
         res.json({message : "Paper added to test series : ", testSeries});

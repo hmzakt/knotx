@@ -5,7 +5,8 @@ import { Question } from "../models/question.model.js";
 export const updateQuestion = async (req, res) => {
     try{
         const {id} = req.params;
-        const updated = await Question.findByIdAndUpdate(id, req, ReportBody, {new : true});
+        const payload = req.body;
+        const updated = await Question.findByIdAndUpdate(id, payload, { new: true });
         if(!updated) return res.json(404).json({message : "Question not found"});
         res.json(updated)
     } catch (err){

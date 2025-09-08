@@ -2,6 +2,7 @@
 
 import { useUserSubscriptions } from '@/hooks/useUserSubscriptions';
 import { CheckCircle, XCircle } from 'lucide-react';
+import { getToken } from '@/lib/auth';
 
 interface SubscriptionStatusProps {
   type: 'paper' | 'test-series' | 'all-access';
@@ -10,6 +11,7 @@ interface SubscriptionStatusProps {
 
 export default function SubscriptionStatus({ type, itemId }: SubscriptionStatusProps) {
   const { subscriptions, loading } = useUserSubscriptions();
+  const hasToken = typeof window !== 'undefined' ? Boolean(getToken()) : false;
 
   if (loading) {
     return (
@@ -20,13 +22,18 @@ export default function SubscriptionStatus({ type, itemId }: SubscriptionStatusP
     );
   }
 
-  if (!subscriptions) {
-    return null;
+  // If no token or no subscriptions data, treat as not subscribed
+  if (!hasToken || !subscriptions) {
+    return (
+      <div className="flex items-center text-sm text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
+        <XCircle className="w-4 h-4 mr-1" />
+        Not Subscribed
+      </div>
+    );
   }
 
   const { hasAllAccess, subscriptions: userSubs } = subscriptions;
 
-  // Check if user has all-access subscription
   if (hasAllAccess) {
     return (
       <div className="flex items-center text-sm text-green-600 bg-green-50 px-2 py-1 rounded-full">
@@ -38,14 +45,13 @@ export default function SubscriptionStatus({ type, itemId }: SubscriptionStatusP
 
   // Check specific subscription based on type
   let hasSubscription = false;
-  
   if (type === 'paper' && itemId) {
-    hasSubscription = userSubs.singlePapers.some(sub => 
-      sub.itemId && typeof sub.itemId === 'object' && sub.itemId._id === itemId
+    hasSubscription = userSubs.singlePapers.some(sub =>
+      sub.itemId && typeof sub.itemId === 'object' && (sub.itemId as any)._id === itemId
     );
   } else if (type === 'test-series' && itemId) {
-    hasSubscription = userSubs.testSeries.some(sub => 
-      sub.itemId && typeof sub.itemId === 'object' && sub.itemId._id === itemId
+    hasSubscription = userSubs.testSeries.some(sub =>
+      sub.itemId && typeof sub.itemId === 'object' && (sub.itemId as any)._id === itemId
     );
   }
 

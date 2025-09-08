@@ -2,6 +2,8 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserSubscriptions } from '../../hooks/useUserSubscriptions';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -72,7 +74,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
+        {user?.role === 'admin' ? <Link href = "dashboard/adminRoles"><Button className="flex items-center gap-2 mb-3 hover:bg-accent/50 transition-colors">Admin Controls</Button></Link>:<></>}
         {/* Subscription Status Overview */}
         <div className="bg-zinc-900 rounded-lg p-6 mb-8 border border-zinc-800">
           <h2 className="text-2xl font-semibold mb-4">Subscription Status</h2>

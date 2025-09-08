@@ -62,6 +62,39 @@ export const createPaper = async (req, res) => {
   }
 };
 
+// Update an existing paper (title/subject/price and questions list)
+export const updatePaper = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, subject, price, questions } = req.body;
+
+    const paper = await Paper.findById(id);
+    if (!paper) {
+      return res.status(404).json(new ApiError(404, "Paper not found"));
+    }
+
+    if (title !== undefined) paper.title = title;
+    if (subject !== undefined) paper.subject = subject;
+    if (price !== undefined) paper.price = price;
+
+    if (questions !== undefined) {
+      if (!Array.isArray(questions)) {
+        return res.status(400).json(new ApiError(400, "questions must be an array"));
+      }
+      // Set questions to provided ids (add/remove accordingly)
+      paper.questions = questions;
+    }
+
+    await paper.save();
+    return res
+      .status(200)
+      .json(new ApiResponse(200, paper, "Paper updated successfully"));
+  } catch (error) {
+    console.error("Error updating paper:", error);
+    return res.status(500).json(new ApiError(500, "Server error", error));
+  }
+};
+
 // Create a new question (can be reused in multiple papers)
 export const createQuestion = async (req, res) => {
   try {

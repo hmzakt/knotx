@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { isAdmin } from "../middlewares/admin.middleware.js";
-import { createPaper, createQuestion, createTestSeries, promoteToAdmin } from "../controllers/admin.controller.js";
+import { createPaper, updatePaper, createQuestion, createTestSeries, promoteToAdmin } from "../controllers/admin.controller.js";
 import { deleteQuestion, updateQuestion } from "../controllers/question.controller.js";
 import { addPaperToTestSeries } from "../controllers/testSeries.controller.js";
 
@@ -20,6 +20,7 @@ router.post("/test-series/:id/add-paper",verifyJWT, isAdmin, addPaperToTestSerie
 // create a new paper
 
 router.post("/paper",verifyJWT, isAdmin, createPaper);
+router.put("/paper/:id",verifyJWT, isAdmin, updatePaper);
 
 // post -> api/admin/question
 // create a new question
