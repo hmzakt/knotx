@@ -125,3 +125,61 @@ export const getTestSeriesWithPapers = async(req, res)=>{
     return res.status(500).json(new ApiError(500, "Server error"));
   }
 };
+
+// Get all test series with papers for admin
+export const listTestSeriesWithPapers = async(req, res) => {
+    try{
+        const series = await TestSeries.find({})
+            .populate({
+                path: "papers",
+                select: "title subject price createdAt updatedAt"
+            })
+            .select("title description price papers createdAt updatedAt")
+            .lean();
+        return res.status(200).json(new ApiResponse(200, series, "Test series with papers listed"));
+    } catch(err){
+        console.error("list test series with papers error : ", err);
+        return res.status(500).json(new ApiError(500, "Server error"))
+    }
+};
+
+// Get all papers with questions for admin
+export const listPapersWithQuestions = async(req, res) => {
+    try{
+        const papers = await Paper.find({})
+            .populate({
+                path: "questions",
+                select: "text options difficulty domain createdAt updatedAt"
+            })
+            .select("title subject price questions createdAt updatedAt")
+            .lean();
+        return res.status(200).json(new ApiResponse(200, papers, "Papers with questions listed"));
+    } catch(err){
+        console.error("list papers with questions error : ", err);
+        return res.status(500).json(new ApiError(500, "Server error"))
+    }
+};
+
+// Get test series with papers for admin (no subscription required)
+export const getTestSeriesWithPapersForAdmin = async(req, res) => {
+    try {
+        const seriesId = req.params.id;
+
+        const series = await TestSeries.findById(seriesId)
+            .populate({
+                path: "papers",
+                select: "title subject price createdAt updatedAt"
+            });
+
+        if (!series) {
+            return res.status(404).json(new ApiError(404, "Test series not found"));
+        }
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, series, "Test series fetched for admin"));
+    } catch (err) {
+        console.error("getTestSeriesWithPapersForAdmin error:", err);
+        return res.status(500).json(new ApiError(500, "Server error"));
+    }
+};

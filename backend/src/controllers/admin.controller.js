@@ -136,6 +136,27 @@ export const createQuestion = async (req, res) => {
   }
 };
 
+// Delete a test series
+export const deleteTestSeries = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const testSeries = await TestSeries.findById(id);
+    if (!testSeries) {
+      return res.status(404).json(new ApiError(404, "Test series not found"));
+    }
+
+    await TestSeries.findByIdAndDelete(id);
+    
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Test series deleted successfully"));
+  } catch (error) {
+    console.error("Error deleting test series:", error);
+    return res.status(500).json(new ApiError(500, "Server error", error));
+  }
+};
+
 // Promote user to admin
 export const promoteToAdmin = asyncHandler(async (req, res) => {
   const { userId } = req.params;

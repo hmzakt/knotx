@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { isAdmin } from "../middlewares/admin.middleware.js";
-import { createPaper, updatePaper, createQuestion, createTestSeries, promoteToAdmin } from "../controllers/admin.controller.js";
+import { createPaper, updatePaper, createQuestion, createTestSeries, deleteTestSeries, promoteToAdmin } from "../controllers/admin.controller.js";
 import { deleteQuestion, updateQuestion } from "../controllers/question.controller.js";
-import { addPaperToTestSeries } from "../controllers/testSeries.controller.js";
+import { addPaperToTestSeries, removePaperFromTestSeries } from "../controllers/testSeries.controller.js";
+import { getTestSeriesWithPapersForAdmin } from "../controllers/content.controller.js";
 
 
 const router = Router();
@@ -14,7 +15,10 @@ router.use(verifyJWT, isAdmin);
 //create new test series
 
 router.post("/test-series",verifyJWT, isAdmin, createTestSeries);
+router.get("/test-series/:id",verifyJWT, isAdmin, getTestSeriesWithPapersForAdmin);
 router.post("/test-series/:id/add-paper",verifyJWT, isAdmin, addPaperToTestSeries);
+router.post("/test-series/:id/remove-paper",verifyJWT, isAdmin, removePaperFromTestSeries);
+router.delete("/test-series/:id",verifyJWT, isAdmin, deleteTestSeries);
 
 //post - api/admin/paper
 // create a new paper
