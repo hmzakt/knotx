@@ -7,6 +7,7 @@ import SubscriptionStatus from '@/components/SubscriptionStatus';
 import PaymentModal from '@/components/PaymentModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useContent } from '@/hooks/useContent';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 type TabType = 'papers' | 'test-series';
 
@@ -19,6 +20,7 @@ export default function ExplorePage() {
   }>({ isOpen: false, data: null });
   
   const { user } = useAuth();
+  const { subscriptions, refetch: refetchSubscriptions } = useSubscription();
   const { papers, testSeries, loading, error, refetch } = useContent();
 
   const handleBuyNow = (type: 'single-paper' | 'test-series' | 'all-access', itemId?: string, itemData?: any) => {
@@ -315,6 +317,7 @@ export default function ExplorePage() {
         <PaymentModal
           isOpen={paymentModal.isOpen}
           onClose={() => setPaymentModal({ isOpen: false, data: null })}
+          onPaymentSuccess={refetchSubscriptions}
           paymentData={paymentModal.data}
         />
       )}

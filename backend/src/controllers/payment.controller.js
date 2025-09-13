@@ -21,6 +21,14 @@ import { markPromoUsed } from "./promocode.controller.js";
  */
 export const createRazorpayOrder = async (req, res) => {
   try {
+    // Check if Razorpay is available
+    if (!razorpay) {
+      return res.status(503).json({
+        success: false,
+        message: "Payment service is currently unavailable. Please try again later."
+      });
+    }
+
     const user = req.user;
     let { type, itemId, baseAmount, currency = "INR", promoCode, durationDays = 30 } = req.body;
 

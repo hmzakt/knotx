@@ -1,13 +1,13 @@
 "use client";
 import { useAuth } from '../../contexts/AuthContext';
-import { useUserSubscriptions } from '../../hooks/useUserSubscriptions';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { subscriptions, loading: subscriptionLoading, error: subscriptionError, refetch } = useUserSubscriptions();
+  const { subscriptions, loading: subscriptionLoading, error: subscriptionError, refetch } = useSubscription();
 
   const formatPrice = (price: number) => {
     return `₹${price}`;
@@ -110,7 +110,7 @@ export default function Dashboard() {
               All Access Subscriptions
             </h2>
             <div className="space-y-3">
-              {subscriptions.subscriptions.allAccess.map((subscription) => (
+              {subscriptions.subscriptions.allAccess.map((subscription: any) => (
                 <div key={subscription._id} className="p-4 bg-zinc-800 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
@@ -137,7 +137,7 @@ export default function Dashboard() {
               Individual Papers ({subscriptions.subscriptions.singlePapers.length})
             </h2>
             <div className="space-y-3">
-              {subscriptions.subscriptions.singlePapers.map((subscription) => {
+              {subscriptions.subscriptions.singlePapers.map((subscription: any) => {
                 const paper = subscription.itemId as any;
                 return (
                   <div key={subscription._id} className="p-4 bg-zinc-800 rounded-lg">
@@ -169,7 +169,7 @@ export default function Dashboard() {
               Test Series ({subscriptions.subscriptions.testSeries.length})
             </h2>
             <div className="space-y-3">
-              {subscriptions.subscriptions.testSeries.map((subscription) => {
+              {subscriptions.subscriptions.testSeries.map((subscription: any) => {
                 const testSeries = subscription.itemId as any;
                 return (
                   <div key={subscription._id} className="p-4 bg-zinc-800 rounded-lg">

@@ -11,6 +11,7 @@ export default function UpdatePaperPage() {
   const { papers } = useContent();
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [questions, setQuestions] = useState<QuestionLite[]>([]);
+  const [durationMinutes, setDurationMinutes] = useState<number>(0);
   const [filterPaper, setFilterPaper] = useState("");
   const [filterLocal, setFilterLocal] = useState("");
   const [serverQuestions, setServerQuestions] = useState<QuestionLite[]>([]);
@@ -40,6 +41,11 @@ export default function UpdatePaperPage() {
         // sync editable fields with latest server data if present
         if (data?.title || data?.subject || data?.price) {
           setSelectedPaper((prev) => (prev ? { ...prev, title: data.title ?? prev.title, subject: data.subject ?? prev.subject, price: data.price ?? prev.price } : prev));
+        }
+        // load duration (seconds) as minutes for editing
+        if (typeof data?.durationSec !== "undefined") {
+          const minutes = data.durationSec ? Math.floor(Number(data.durationSec) / 60) : 0;
+          setDurationMinutes(minutes);
         }
       } catch (e) {
         // keep existing questions if server fails
@@ -102,11 +108,13 @@ export default function UpdatePaperPage() {
     setStatus(null);
     try {
       const questionIds = questions.map((q) => q._id).filter(Boolean);
+      const durationSec = Number(durationMinutes) > 0 ? Number(durationMinutes) * 60 : 0;
       await apiClient.put(`/admin/paper/${selectedPaper._id}`, {
         title: selectedPaper.title,
         subject: selectedPaper.subject,
         price: selectedPaper.price,
         questions: questionIds,
+        durationSec,
       });
       setStatus("Updated on server");
     } catch (e: any) {
@@ -169,6 +177,11 @@ export default function UpdatePaperPage() {
                 <div>
                   <label className="block text-sm text-zinc-400 mb-1">Price</label>
                   <input type="number" className="w-full bg-zinc-800 rounded p-2" value={selectedPaper.price} onChange={(e) => setSelectedPaper({ ...selectedPaper, price: parseFloat(e.target.value || "0") })} />
+                </div>
+                <div>
+                  <label className="block text-sm text-zinc-400 mb-1">Time limit (minutes)</label>
+                  <input type="number" className="w-full bg-zinc-800 rounded p-2" value={durationMinutes} onChange={(e) => setDurationMinutes(parseInt(e.target.value || "0"))} />
+                  <p className="text-xs text-zinc-500 mt-1">Leave 0 for no time limit</p>
                 </div>
               </div>
 

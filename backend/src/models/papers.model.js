@@ -15,6 +15,11 @@ const paperSchema = new Schema({
         type: Number,
         required: true
     },
+    // duration in seconds for attempts on this paper
+    durationSec: {
+        type: Number,
+        default: 0 // 0 means no limit
+    },
     questions: [
         {
             type: Schema.Types.ObjectId,

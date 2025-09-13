@@ -26,7 +26,7 @@ export const startAttempt = async (req, res) => {
             return res.status(400).json(new ApiError(400, "Invalid paperId"));
         }
 
-        const paper = Paper.findById(paperId).populate({
+        const paper = await Paper.findById(paperId).populate({
             path: "questions"
         });
 
@@ -47,7 +47,6 @@ export const startAttempt = async (req, res) => {
         }
 
         const questionSnapshot = paper.questions.map(q => {
-
             const optionsSnap = q.options.map(
                 opt => ({
                     optionText: opt.optionText
@@ -94,7 +93,10 @@ export const startAttempt = async (req, res) => {
             attemptId: attempt._id,
             paperId,
             totalQuestions,
-            questions: sanitized
+            questions: sanitized,
+            durationSec: paper.durationSec || 0,
+            startedAt: attempt.startedAt,
+            remainingSec: paper.durationSec ? Number(paper.durationSec) : null
         }, "Attempt started"));
     } catch (err) {
         console.error("Start attempt error : ", err);
@@ -127,7 +129,7 @@ export const answerQuestion = async (req, res) => {
         const attempt = await Attempt.findById(attemptId);
         if(!attempt) return res.status(400).json(new ApiError(404, " attempt not found"));
 
-        if(attempt.userId.toString() !== userId.toString){
+        if(attempt.userId.toString() !== userId.toString()){
             return res.status(403).json(new ApiError(403, "No attempt owner"));
         }
 
@@ -180,7 +182,7 @@ export const answerQuestion = async (req, res) => {
 
 export const submitAttempt = async (req, res) =>{
     try{
-        const userId = req.user_id;
+    const userId = req.user._id;
         const { attemptId } = req.params;
 
         if(!mongoose.isValidObjectId(attemptId)){
@@ -215,7 +217,7 @@ export const submitAttempt = async (req, res) =>{
             }
             else if (selected === null || selected === undefined){}
             else {
-                if (negative && isNaN(negative)) score -= negative;
+                if (negative && !isNaN(negative)) score -= negative;
             }
 
             breakdown.push({
@@ -229,7 +231,24 @@ export const submitAttempt = async (req, res) =>{
         attempt.status = "submitted";
         attempt.submittedAt = new Date();
 
+        // compute duration in seconds
         attempt.durationSec = Math.floor((attempt.submittedAt - attempt.startedAt)/1000);
+
+        // enforce paper time limit if configured
+        try {
+            const paper = await Paper.findById(attempt.paperId).select('durationSec');
+            const allowed = Number(paper?.durationSec ?? 0);
+            if (allowed > 0 && attempt.durationSec > allowed) {
+                // mark submitted to prevent further submissions and save state
+                attempt.status = 'submitted';
+                attempt.score = 0; // no credit for late submission
+                await attempt.save();
+                return res.status(400).json(new ApiError(400, 'Time limit exceeded; attempt auto-submitted'));
+            }
+        } catch (e) {
+            // if paper fetch fails, continue to save normally
+            console.error('Could not verify paper duration:', e);
+        }
 
         await attempt.save();
 
@@ -272,22 +291,37 @@ export const getAttempt = async (req, res) => {
       return res.status(403).json(new ApiError(403, "Not attempt owner"));
     }
 
-    if (attempt.status === "in-progress") {
+        if (attempt.status === "in-progress") {
       // Return sanitized questions (no correctIndex)
-      const questions = attempt.questionSnapshot.map(q => ({
-        questionId: q.questionId,
-        text: q.text,
-        options: q.options.map((o, idx) => ({ index: idx, optionText: o.optionText }))
-      }));
+            const questions = attempt.questionSnapshot.map(q => ({
+                questionId: q.questionId,
+                text: q.text,
+                options: q.options.map((o, idx) => ({ index: idx, optionText: o.optionText }))
+            }));
 
-      return res.status(200).json(new ApiResponse(200, {
-        attemptId: attempt._id,
-        status: attempt.status,
-        startedAt: attempt.startedAt,
-        totalQuestions: attempt.totalQuestions,
-        questions,
-        answers: attempt.answers
-      }, "Attempt fetched (in-progress)"));
+            // compute remaining seconds from paper.durationSec if available
+                    let remainingSec = null;
+            try {
+                const paper = await Paper.findById(attempt.paperId).select('durationSec');
+                const allowed = Number(paper?.durationSec ?? 0);
+                if (allowed > 0) {
+                    const elapsed = Math.floor((Date.now() - new Date(attempt.startedAt).getTime()) / 1000);
+                            remainingSec = Math.max(allowed - elapsed, 0);
+                }
+            } catch (e) {
+                console.error('Could not compute remainingSec for attempt:', e);
+            }
+
+            return res.status(200).json(new ApiResponse(200, {
+                attemptId: attempt._id,
+                paperId: attempt.paperId,
+                status: attempt.status,
+                startedAt: attempt.startedAt,
+                totalQuestions: attempt.totalQuestions,
+                questions,
+                answers: attempt.answers,
+                remainingSec
+            }, "Attempt fetched (in-progress)"));
     } else {
       // Submitted => show breakdown including correctIndex (safe)
       const breakdown = attempt.questionSnapshot.map(q => {
@@ -303,6 +337,7 @@ export const getAttempt = async (req, res) => {
 
       return res.status(200).json(new ApiResponse(200, {
         attemptId: attempt._id,
+        paperId: attempt.paperId,
         status: attempt.status,
         score: attempt.score,
         total: attempt.totalQuestions,

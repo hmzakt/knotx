@@ -9,7 +9,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 export const listPapers = async(req, res) => {
     try{
         const papers = await Paper.find({})
-        .select("title subject price createdAt updatedAt")
+    .select("title subject price durationSec createdAt updatedAt")
         .lean();
 
         return res.status(200)
@@ -90,6 +90,7 @@ export const getPaperWithQuestions = async (req, res) => {
       title: paper.title,
       subject: paper.subject,
       price: paper.price,
+      durationSec: paper.durationSec || 0,
       createdAt: paper.createdAt,
       updatedAt: paper.updatedAt,
       questions: sanitizedQuestions

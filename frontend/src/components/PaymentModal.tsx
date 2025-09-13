@@ -8,6 +8,7 @@ import { X, CreditCard, Shield, Clock } from 'lucide-react';
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPaymentSuccess?: () => void;
   paymentData: {
     type: 'single-paper' | 'test-series' | 'all-access';
     itemId?: string;
@@ -20,7 +21,7 @@ interface PaymentModalProps {
   };
 }
 
-export default function PaymentModal({ isOpen, onClose, paymentData }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, paymentData }: PaymentModalProps) {
   const [promoCode, setPromoCode] = useState(paymentData?.promoCode || '');
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
@@ -97,6 +98,7 @@ export default function PaymentModal({ isOpen, onClose, paymentData }: PaymentMo
     });
     
     if (success) {
+      onPaymentSuccess?.();
       onClose();
     }
   };

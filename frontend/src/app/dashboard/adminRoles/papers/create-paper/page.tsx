@@ -12,6 +12,7 @@ export default function CreatePaperPage() {
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [price, setPrice] = useState<number>(0);
+  const [durationMinutes, setDurationMinutes] = useState<number>(0);
   const [selectedQuestions, setSelectedQuestions] = useState<QuestionLite[]>([]);
   const [serverQuestions, setServerQuestions] = useState<QuestionLite[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -70,21 +71,24 @@ export default function CreatePaperPage() {
     if (!title.trim()) return;
     if (!subject.trim()) return;
     if (!price || price <= 0) return;
-    
+
     setIsUploading(true);
     setUploadMessage("");
-    
+
     try {
       const questionIds = selectedQuestions.map((q) => q._id).filter(Boolean);
-      await apiClient.post("/admin/paper", { title, subject, price, questions: questionIds });
+      // convert minutes to seconds for backend
+      const durationSec = Number(durationMinutes) > 0 ? Number(durationMinutes) * 60 : 0;
+      await apiClient.post("/admin/paper", { title, subject, price, questions: questionIds, durationSec });
       setUploadMessage("Paper uploaded successfully!");
-      
+
       // Clear form after successful upload
       setTitle("");
       setSubject("");
       setPrice(0);
+      setDurationMinutes(0);
       setSelectedQuestions([]);
-      
+
       // Clear message after 3 seconds
       setTimeout(() => setUploadMessage(""), 3000);
     } catch (error) {
@@ -122,6 +126,11 @@ export default function CreatePaperPage() {
             <div>
               <label className="block text-sm text-zinc-400 mb-1">Price</label>
               <input type="number" className="w-full bg-zinc-800 rounded p-2" value={price} onChange={(e) => setPrice(parseFloat(e.target.value || "0"))} />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">Time limit (minutes)</label>
+              <input type="number" className="w-full bg-zinc-800 rounded p-2" value={durationMinutes} onChange={(e) => setDurationMinutes(parseInt(e.target.value || "0"))} />
+              <p className="text-xs text-zinc-500 mt-1">Leave 0 for no time limit</p>
             </div>
           </div>
 
