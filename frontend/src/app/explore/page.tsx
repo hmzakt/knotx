@@ -8,6 +8,10 @@ import PaymentModal from '@/components/PaymentModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useContent } from '@/hooks/useContent';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useAttempts } from '@/hooks/useAttempts';
+import { useRouter } from 'next/navigation';
+import apiClient from '@/lib/api';
+import { CheckCircle, Eye } from 'lucide-react';
 
 type TabType = 'papers' | 'test-series';
 
@@ -18,10 +22,15 @@ export default function ExplorePage() {
     isOpen: boolean;
     data: any;
   }>({ isOpen: false, data: null });
-  
+  const [expandedSeries, setExpandedSeries] = useState<string | null>(null);
+  const [testSeriesWithPapers, setTestSeriesWithPapers] = useState<any[]>([]);
+  const [loadingSeriesDetails, setLoadingSeriesDetails] = useState(false);
+
   const { user } = useAuth();
-  const { subscriptions, refetch: refetchSubscriptions } = useSubscription();
+  const { subscriptions, refetch: refetchSubscriptions, loading: subLoading, initialized } = useSubscription();
   const { papers, testSeries, loading, error, refetch } = useContent();
+  const { getAttemptStatus, getAttemptForPaper } = useAttempts();
+  const router = useRouter();
 
   const handleBuyNow = (type: 'single-paper' | 'test-series' | 'all-access', itemId?: string, itemData?: any) => {
     if (!user) {
@@ -103,6 +112,70 @@ export default function ExplorePage() {
     series.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     series.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Subscription helpers
+  let hasAllAccess: boolean = false;
+  let userSubs: { singlePapers: any[]; testSeries: any[] } = { singlePapers: [], testSeries: [] };
+  if (subscriptions && typeof subscriptions === 'object') {
+    hasAllAccess = subscriptions.hasAllAccess;
+    userSubs = subscriptions.subscriptions || { singlePapers: [], testSeries: [] };
+  }
+
+  const hasPaperSubscription = (paperId: string) => {
+    if (hasAllAccess) return true;
+    return userSubs.singlePapers.some((sub: any) => sub.itemId && typeof sub.itemId === 'object' && sub.itemId._id === paperId);
+  };
+  const hasTestSeriesSubscription = (seriesId: string) => {
+    if (hasAllAccess) return true;
+    return userSubs.testSeries.some((sub: any) => sub.itemId && typeof sub.itemId === 'object' && sub.itemId._id === seriesId);
+  };
+
+  // Add handler for Attempt Now
+  const handleAttemptNow = (paperId: string) => {
+    const existingAttempt = getAttemptForPaper(paperId);
+    if (existingAttempt) {
+      if (existingAttempt.status === 'in-progress') {
+        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${existingAttempt._id}&paperId=${paperId}`);
+      } else if (existingAttempt.status === 'submitted') {
+        router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${existingAttempt._id}`);
+      } else {
+        // fallback: start new attempt
+        router.push(`/subscriptions/attempts/attempt-paper?paperId=${paperId}`);
+      }
+    } else {
+      // No attempt yet, start new
+      router.push(`/subscriptions/attempts/attempt-paper?paperId=${paperId}`);
+    }
+  };
+
+  const fetchTestSeriesWithPapers = async (seriesId: string) => {
+    try {
+      setLoadingSeriesDetails(true);
+      const response = await apiClient.get(`/private/test-series/${seriesId}`);
+      return response.data.data;
+    } catch (err) {
+      return null;
+    } finally {
+      setLoadingSeriesDetails(false);
+    }
+  };
+
+  const handleExpandSeries = async (seriesId: string) => {
+    if (expandedSeries === seriesId) {
+      setExpandedSeries(null);
+      return;
+    }
+    const existingSeries = testSeriesWithPapers.find(s => s._id === seriesId);
+    if (existingSeries) {
+      setExpandedSeries(seriesId);
+      return;
+    }
+    const seriesDetails = await fetchTestSeriesWithPapers(seriesId);
+    if (seriesDetails) {
+      setTestSeriesWithPapers(prev => [...prev, seriesDetails]);
+      setExpandedSeries(seriesId);
+    }
+  };
 
   if (loading) {
     return (
@@ -218,41 +291,50 @@ export default function ExplorePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activeTab === 'papers' ? (
             filteredPapers.length > 0 ? (
-              filteredPapers.map((paper) => (
-                <div
-                  key={paper._id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-200 group"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                      {paper.title}
-                    </h3>
-                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full ml-2">
-                      {paper.subject}
-                    </span>
-                  </div>
-                  
-                  <p className="text-sm text-gray-500 mb-4">
-                    Added on {formatDate(paper.createdAt)}
-                  </p>
-                  
-                  <div className="mb-4">
-                    <SubscriptionStatus type="paper" itemId={paper._id} />
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {formatPrice(paper.price)}
+              filteredPapers.map((paper) => {
+                const isSubscribed = hasPaperSubscription(paper._id);
+                return (
+                  <div
+                    key={paper._id}
+                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-200 group"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                        {paper.title}
+                      </h3>
+                      <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full ml-2">
+                        {paper.subject}
+                      </span>
                     </div>
-                    <Button
-                      onClick={() => handleBuyNow('single-paper', paper._id, paper)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg group-hover:scale-105 transition-transform duration-200"
-                    >
-                      Buy Now
-                    </Button>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Added on {formatDate(paper.createdAt)}
+                    </p>
+                    <div className="mb-4">
+                      <SubscriptionStatus type="paper" itemId={paper._id} />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatPrice(paper.price)}
+                      </div>
+                      {isSubscribed ? (
+                        <Button
+                          onClick={() => handleAttemptNow(paper._id)}
+                          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg group-hover:scale-105 transition-transform duration-200"
+                        >
+                          Attempt Now
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleBuyNow('single-paper', paper._id, paper)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg group-hover:scale-105 transition-transform duration-200"
+                        >
+                          Buy Now
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="col-span-full text-center py-12">
                 <p className="text-gray-500 text-lg">
@@ -262,45 +344,126 @@ export default function ExplorePage() {
             )
           ) : (
             filteredTestSeries.length > 0 ? (
-              filteredTestSeries.map((series) => (
-                <div
-                  key={series._id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-200 group"
-                >
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {series.title}
-                  </h3>
-                  
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                    {series.description || 'No description available'}
-                  </p>
-                  
-                  <div className="flex items-center text-sm text-gray-500 mb-4">
-                    <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                      {series.papersCount} Papers
-                    </span>
-                    <span className="ml-2">
-                      Added on {formatDate(series.createdAt)}
-                    </span>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <SubscriptionStatus type="test-series" itemId={series._id} />
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {formatPrice(series.price)}
+              filteredTestSeries.map((series) => {
+                const isSubscribed = hasTestSeriesSubscription(series._id);
+                return (
+                  <div
+                    key={series._id}
+                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-200 group"
+                  >
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {series.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                      {series.description || 'No description available'}
+                    </p>
+                    <div className="flex items-center text-sm text-gray-500 mb-4">
+                      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                        {series.papersCount} Papers
+                      </span>
+                      <span className="ml-2">
+                        Added on {formatDate(series.createdAt)}
+                      </span>
                     </div>
-                    <Button
-                      onClick={() => handleBuyNow('test-series', series._id, series)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg group-hover:scale-105 transition-transform duration-200"
-                    >
-                      Buy Now
-                    </Button>
+                    <div className="mb-4">
+                      <SubscriptionStatus type="test-series" itemId={series._id} />
+                    </div>
+                    {isSubscribed ? (
+                      <>
+                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                          <div className="text-2xl font-bold text-blue-700">
+                            {formatPrice(series.price)}
+                          </div>
+                          <div className="flex items-center text-sm text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Subscribed
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <Button
+                            onClick={() => handleExpandSeries(series._id)}
+                            variant="outline"
+                            className="w-full text-sm bg-white/50 hover:bg-white border-blue-200 hover:border-blue-300 text-blue-700 hover:text-blue-800"
+                            disabled={loadingSeriesDetails}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            {loadingSeriesDetails ? 'Loading...' : expandedSeries === series._id ? 'Hide' : 'View'} Papers
+                          </Button>
+                          {expandedSeries === series._id && (
+                            <div className="mt-4 space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                              {(() => {
+                                const seriesWithPapers = testSeriesWithPapers.find(s => s._id === series._id);
+                                const papersToShow = seriesWithPapers?.papers || [];
+                                if (papersToShow.length === 0) {
+                                  return (
+                                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
+                                      <span>No papers available in this test series</span>
+                                    </div>
+                                  );
+                                }
+                                return papersToShow.map((paper: any) => {
+                                  const attemptStatus = getAttemptStatus(paper._id);
+                                  return (
+                                    <div key={paper._id} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200 hover:border-blue-300 transition-colors flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                      <div className="flex flex-col md:flex-row md:items-center gap-2 flex-1">
+                                        <h4 className="text-sm font-semibold text-gray-900 line-clamp-1 flex-1">
+                                          {paper.title}
+                                        </h4>
+                                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full whitespace-nowrap">
+                                          {paper.subject}
+                                        </span>
+                                        <span className="text-xs ml-2">
+                                          {attemptStatus.status === 'not-attempted' ? (
+                                            <span className="text-gray-500 flex items-center">Not Attempted</span>
+                                          ) : attemptStatus.status === 'in-progress' ? (
+                                            <span className="text-blue-600 flex items-center">In Progress</span>
+                                          ) : (
+                                            <span className="text-green-600 flex items-center">Score: {attemptStatus.score}</span>
+                                          )}
+                                        </span>
+                                      </div>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          const attemptForPaper = getAttemptForPaper(paper._id);
+                                          if (attemptStatus.status === 'not-attempted') {
+                                            router.push(`/subscriptions/attempts/attempt-paper?paperId=${paper._id}`);
+                                          } else if (attemptStatus.status === 'in-progress') {
+                                            router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`);
+                                          } else {
+                                            router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`);
+                                          }
+                                        }}
+                                        className="text-xs px-3 py-1.5 h-7 bg-white hover:bg-blue-50 border-blue-200 hover:border-blue-300 text-blue-700 ml-auto"
+                                      >
+                                        {attemptStatus.status === 'not-attempted' ? 'Start' : 
+                                         attemptStatus.status === 'in-progress' ? 'Resume' : 'View'}
+                                      </Button>
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                        <div className="text-2xl font-bold text-blue-700">
+                          {formatPrice(series.price)}
+                        </div>
+                        <Button
+                          onClick={() => handleBuyNow('test-series', series._id, series)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg group-hover:scale-105 transition-transform duration-200"
+                        >
+                          Buy Now
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="col-span-full text-center py-12">
                 <p className="text-gray-500 text-lg">
