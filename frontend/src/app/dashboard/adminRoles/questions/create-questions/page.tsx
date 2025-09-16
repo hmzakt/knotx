@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Save, UploadCloud, Plus, CheckCircle2 } from "lucide-react";
 import apiClient from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Option = { optionText: string; isCorrect: boolean };
 
@@ -62,7 +63,10 @@ export default function CreateQuestionPage() {
     resetForm();
   };
 
+  const {user} = useAuth();
+
   return (
+    user?.role === "admin" ? (
     <div className="min-h-screen bg-zinc-950 text-white">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <h1 className="text-2xl font-bold mb-6">Create Question</h1>
@@ -133,6 +137,7 @@ export default function CreateQuestionPage() {
         </div>
       </div>
     </div>
+    ):(<div>No trespassers</div>)
   );
 }
 

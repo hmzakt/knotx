@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { Save, UploadCloud, Trash2, Search, Filter } from "lucide-react";
 import apiClient from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { div } from "three/tsl";
 
 type Question = {
   _id: string;
@@ -93,8 +95,9 @@ export default function UpdateQuestionsPage() {
       const bd = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return sortDir === "desc" ? bd - ad : ad - bd;
     });
-
+    const {user} = useAuth();
   return (
+    user?.role === "admin"?(
     <div className="min-h-screen bg-zinc-950 text-white">
       <div className="container mx-auto px-4 py-8 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
@@ -152,7 +155,8 @@ export default function UpdateQuestionsPage() {
         </div>
       </div>
     </div>
-  );
+    ):(<div>Admin roles</div>)  
+);
 }
 
 function QuestionEditor({ q, onChange, onSaveLocal, onUpload, onDelete, status }: { q: Question; onChange: (v: Question) => void; onSaveLocal: () => void; onUpload: () => void; onDelete: () => void; status: string | null }) {

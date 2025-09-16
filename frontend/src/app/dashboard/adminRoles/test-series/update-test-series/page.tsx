@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Save, UploadCloud, Filter, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
 import apiClient from "@/lib/api";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Series = { _id?: string; id?: string; title: string; description?: string; price?: number; papers?: any[] };
 type PaperLite = { _id?: string; id?: string; title: string; subject?: string; price?: number; createdAt?: string; savedAt?: string };
@@ -205,7 +206,10 @@ export default function UpdateTestSeriesPage() {
     return filtered;
   }, [mergedPapers, filterPapers, domainFilter, sortBy, sortOrder]);
 
+  const {user} = useAuth()
+
   return (
+    user?.role === "admin" ? (
     <div className="min-h-screen bg-zinc-950 text-white">
       <div className="container mx-auto px-4 py-8 grid gap-6 lg:grid-cols-3">
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
@@ -411,6 +415,7 @@ export default function UpdateTestSeriesPage() {
         </div>
       )}
     </div>
+    ):(<div>Admin only page</div>)
   );
 }
 

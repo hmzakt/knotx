@@ -4,6 +4,7 @@ import {useEffect, useMemo, useState } from "react";
 import { Save, UploadCloud, Filter, Plus, Trash2 } from "lucide-react";
 import { useContent } from "@/hooks/useContent";
 import apiClient from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 type Paper = { _id: string; title: string; subject: string; price: number };
 type QuestionLite = { _id?: string; id?: string; text: string; difficulty?: string; domain?: string };
 
@@ -142,7 +143,9 @@ export default function UpdatePaperPage() {
     return filtered;
   }, [localQuestions, serverQuestions, filterLocal]);
 
+  const {user} = useAuth();
   return (
+    user?.role === "admin" ? (
     <div className="min-h-screen bg-zinc-950 text-white">
       <div className="container mx-auto px-4 py-8 grid gap-6 lg:grid-cols-3">
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
@@ -253,6 +256,7 @@ export default function UpdatePaperPage() {
         </div>
       </div>
     </div>
+    ):(<div>Only admins</div>)
   );
 }
 
