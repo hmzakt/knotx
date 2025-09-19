@@ -11,6 +11,8 @@ import {
   Mail,
   Phone,
   MapPin,
+  Minus,
+  Plus
 } from "lucide-react";
 
 export default function Home() {
@@ -114,25 +116,25 @@ export default function Home() {
               <div className="bg-primary/20 p-3 rounded-md">
                 <Zap className="w-6 h-6 text-primary" />
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight">
+              <h1 className="text-3xl md:text-4xl font-bold leading-tight">
                 <span className="text-primary">Unlock</span>{" "}
                 <span className="text-foreground">Your Creative Potential</span>
               </h1>
             </div>
             <div className="mt-6">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-medium">
+              <h2 className="text-xl md:text-2xl font-medium">
                 with Online Design and Development Courses.
               </h2>
-              <p className="text-base sm:text-lg text-muted-foreground mt-3">
+              <p className="text-lg text-muted-foreground mt-3">
                 Learn from Industry Experts and Enhance Your Skills.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-5 py-4 text-base rounded-lg shadow-md">
+                <Button className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 py-4 text-base rounded-lg shadow-md">
                   Explore Courses
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-border bg-muted hover:bg-muted/70 text-foreground font-medium px-5 py-4 text-base rounded-lg"
+                  className="border-border bg-muted hover:bg-muted/70 text-foreground font-medium px-6 py-4 text-base rounded-lg"
                 >
                   View Pricing
                 </Button>
@@ -143,25 +145,22 @@ export default function Home() {
             <img
               src="https://api.builder.io/api/v1/image/assets/TEMP/8ab6dfbc5c2221ad4a139dbe05e4b5f8c437751c?width=1548"
               alt="Learning illustration"
-              className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg h-auto object-cover rounded-xl shadow-lg"
+              className="w-full max-w-sm md:max-w-md lg:max-w-lg h-auto object-cover rounded-xl shadow-lg"
             />
           </div>
         </div>
       </section>
 
       {/* Benefits */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-20">
         <div className="flex flex-col lg:flex-row justify-between items-end gap-6 mb-12">
-          <div className="flex-1">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-              Benefits
-            </h2>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl">
-              Lorem ipsum dolor sit amet consectetur. Tempus tincidunt etiam eget
-              elit id imperdiet et.
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-2">Benefits</h2>
+            <p className="text-gray-400 max-w-2xl">
+              Why learners choose us for their design and development journey.
             </p>
           </div>
-          <Button className="border-border bg-muted hover:bg-muted/70 text-foreground px-5 py-3 text-base rounded-lg">
+          <Button className="bg-gray-900 hover:bg-gray-800 border border-gray-800">
             View All
           </Button>
         </div>
@@ -169,63 +168,55 @@ export default function Home() {
           {benefits.map((b, i) => (
             <Card
               key={i}
-              className="bg-card border-border p-6 sm:p-8 flex flex-col h-full rounded-xl shadow-sm hover:shadow-md"
+              className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-md hover:border-emerald-500 transition group h-full"
             >
-              <div className="text-right mb-6">
-                <span className="text-3xl sm:text-4xl md:text-5xl font-bold opacity-20">
+              <div className="text-right mb-4">
+                <span className="text-4xl font-bold text-gray-700 group-hover:text-emerald-400 transition">
                   {b.number}
                 </span>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg sm:text-xl font-semibold mb-2">
-                  {b.title}
-                </h3>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  {b.description}
-                </p>
+              <h3 className="text-lg font-semibold mb-2">{b.title}</h3>
+              <p className="text-sm text-gray-400">{b.description}</p>
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="border-gray-700 bg-gray-800 hover:bg-gray-700 rounded-lg"
+                >
+                  <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="mt-6 border-border bg-muted hover:bg-muted/70 self-end p-3 rounded-lg"
-              >
-                <ArrowUpRight className="w-5 h-5 text-primary" />
-              </Button>
             </Card>
           ))}
         </div>
       </section>
 
       {/* Pricing */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-20">
         <div className="flex flex-col lg:flex-row justify-between items-end gap-6 mb-12">
-          <div className="flex-1">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-              Our Pricing
-            </h2>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-2">Our Pricing</h2>
+            <p className="text-gray-400 max-w-2xl">
               Choose a plan that fits your goals. Upgrade anytime as you grow.
             </p>
           </div>
-          <div className="bg-card p-2 rounded-lg flex shadow-sm border border-border">
+          <div className="bg-gray-900 border border-gray-800 p-2 rounded-lg flex shadow-sm">
             <Button
               variant={activeTab === "monthly" ? "default" : "ghost"}
-              className={`px-6 py-2 text-sm sm:text-base rounded-md ${
-                activeTab === "monthly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground"
-              }`}
+              className={`px-6 py-2 rounded-md ${activeTab === "monthly"
+                  ? "bg-primary text-white"
+                  : "text-gray-400 hover:text-white"
+                }`}
               onClick={() => setActiveTab("monthly")}
             >
               Monthly
             </Button>
             <Button
               variant={activeTab === "yearly" ? "default" : "ghost"}
-              className={`px-6 py-2 text-sm sm:text-base rounded-md ${
-                activeTab === "yearly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground"
-              }`}
+              className={`px-6 py-2 rounded-md ${activeTab === "yearly"
+                  ? "bg-primary text-white"
+                  : "text-gray-400 hover:text-white"
+                }`}
               onClick={() => setActiveTab("yearly")}
             >
               Yearly
@@ -233,32 +224,31 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Free */}
-          <Card className="bg-card border-border p-6 flex flex-col rounded-xl shadow hover:shadow-md">
+          <Card className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow hover:shadow-md flex flex-col h-full">
             <h3 className="text-lg font-semibold text-center mb-4">Free Plan</h3>
             <div className="text-center mb-6">
-              <span className="text-4xl sm:text-5xl font-bold">$0</span>
-              <span className="text-base text-muted-foreground">/month</span>
+              <span className="text-4xl font-bold">$0</span>
+              <span className="text-base text-gray-400">/month</span>
             </div>
-            <div className="flex-1 bg-muted border border-border rounded-lg p-4 space-y-3">
+            <div className="flex-1 bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
               {freeFeatures.map((f, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 p-3 border border-border rounded-md"
+                  className="flex items-center gap-3 p-3 border border-gray-700 rounded-md"
                 >
                   <div
-                    className={`p-2 rounded-md ${
-                      f.included ? "bg-primary" : "border border-border"
-                    }`}
+                    className={`p-2 rounded-md ${f.included ? "bg-emerald-500" : "border border-gray-600"
+                      }`}
                   >
                     {f.included ? (
                       <Check className="w-4 h-4 text-white" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground" />
+                      <X className="w-4 h-4 text-gray-500" />
                     )}
                   </div>
-                  <span className="text-sm sm:text-base">{f.text}</span>
+                  <span className="text-sm text-gray-300">{f.text}</span>
                 </div>
               ))}
             </div>
@@ -268,22 +258,22 @@ export default function Home() {
           </Card>
 
           {/* Pro */}
-          <Card className="bg-card border-border p-6 flex flex-col rounded-xl shadow hover:shadow-md">
+          <Card className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow hover:shadow-md flex flex-col h-full">
             <h3 className="text-lg font-semibold text-center mb-4">Pro Plan</h3>
             <div className="text-center mb-6">
-              <span className="text-4xl sm:text-5xl font-bold">$79</span>
-              <span className="text-base text-muted-foreground">/month</span>
+              <span className="text-4xl font-bold">$79</span>
+              <span className="text-base text-gray-400">/month</span>
             </div>
-            <div className="flex-1 bg-muted border border-border rounded-lg p-4 space-y-3">
+            <div className="flex-1 bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
               {proFeatures.map((f, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 p-3 border border-border rounded-md"
+                  className="flex items-center gap-3 p-3 border border-gray-700 rounded-md"
                 >
-                  <div className="bg-primary p-2 rounded-md">
+                  <div className="bg-emerald-500 p-2 rounded-md">
                     <Check className="w-4 h-4 text-white" />
                   </div>
-                  <span className="text-sm sm:text-base">{f.text}</span>
+                  <span className="text-sm text-gray-300">{f.text}</span>
                 </div>
               ))}
             </div>
@@ -291,31 +281,46 @@ export default function Home() {
               Get Started
             </Button>
           </Card>
+
+          {/* Example Third Card */}
+          <Card className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow hover:shadow-md flex flex-col h-full">
+            <h3 className="text-lg font-semibold text-center mb-4">Enterprise</h3>
+            <div className="text-center mb-6">
+              <span className="text-4xl font-bold">Custom</span>
+              <span className="text-base text-gray-400">/plan</span>
+            </div>
+            <p className="text-gray-400 text-center flex-1">
+              Contact us for tailored solutions for teams and organizations.
+            </p>
+            <Button className="mt-6 bg-primary hover:bg-primary/90 text-white rounded-lg">
+              Contact Sales
+            </Button>
+          </Card>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="container mx-auto px-4 py-16">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-8">
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="text-3xl md:text-4xl font-bold mb-8">
           Frequently Asked Questions
         </h2>
         <div className="space-y-4">
           {faqs.map((f, i) => (
             <Card
               key={i}
-              className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm hover:shadow-md cursor-pointer"
+              className="bg-gray-900 border border-gray-800 rounded-lg p-6 shadow-md hover:border-emerald-500 transition cursor-pointer"
               onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
             >
               <div className="flex justify-between items-center">
-                <h3 className="text-base sm:text-lg font-medium">{f.question}</h3>
-                <span className="text-primary font-bold">
-                  {openFAQ === i ? "−" : "+"}
-                </span>
+                <h3 className="text-lg font-medium">{f.question}</h3>
+                {openFAQ === i ? (
+                  <Minus className="w-5 h-5 text-emerald-400" />
+                ) : (
+                  <Plus className="w-5 h-5 text-emerald-400" />
+                )}
               </div>
               {openFAQ === i && (
-                <p className="mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
-                  {f.answer}
-                </p>
+                <p className="mt-3 text-gray-400 leading-relaxed">{f.answer}</p>
               )}
             </Card>
           ))}
@@ -323,14 +328,14 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-card py-10 px-4 mt-16 border-t border-border">
+      <footer className="bg-gray-900 py-10 px-4 mt-16 border-t border-gray-800">
         <div className="container mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo + Contact */}
           <div className="space-y-4">
             <div className="bg-primary p-2 rounded-md w-10 h-10 flex items-center justify-center text-white font-bold">
               S
             </div>
-            <div className="space-y-2 text-sm sm:text-base text-muted-foreground">
+            <div className="space-y-2 text-sm text-gray-400">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4" /> hello@skillbridge.com
               </div>
@@ -346,7 +351,7 @@ export default function Home() {
           {/* Links */}
           <div>
             <h4 className="font-semibold mb-2">Home</h4>
-            <ul className="space-y-1 text-sm text-muted-foreground">
+            <ul className="space-y-1 text-sm text-gray-400">
               <li>Benefits</li>
               <li>Our Courses</li>
               <li>Testimonials</li>
@@ -355,7 +360,7 @@ export default function Home() {
           </div>
           <div>
             <h4 className="font-semibold mb-2">About Us</h4>
-            <ul className="space-y-1 text-sm text-muted-foreground">
+            <ul className="space-y-1 text-sm text-gray-400">
               <li>Company</li>
               <li>Achievements</li>
               <li>Our Goals</li>
@@ -368,26 +373,26 @@ export default function Home() {
             <div className="flex gap-3">
               <Button
                 size="icon"
-                className="bg-muted hover:bg-muted/70 rounded-lg text-foreground"
+                className="bg-gray-800 hover:bg-gray-700 rounded-lg text-white"
               >
                 F
               </Button>
               <Button
                 size="icon"
-                className="bg-muted hover:bg-muted/70 rounded-lg text-foreground"
+                className="bg-gray-800 hover:bg-gray-700 rounded-lg text-white"
               >
                 T
               </Button>
               <Button
                 size="icon"
-                className="bg-muted hover:bg-muted/70 rounded-lg text-foreground"
+                className="bg-gray-800 hover:bg-gray-700 rounded-lg text-white"
               >
                 in
               </Button>
             </div>
           </div>
         </div>
-        <p className="mt-8 text-center text-xs sm:text-sm text-muted-foreground">
+        <p className="mt-8 text-center text-xs text-gray-500">
           © 2023 Skillbridge. All rights reserved.
         </p>
       </footer>
