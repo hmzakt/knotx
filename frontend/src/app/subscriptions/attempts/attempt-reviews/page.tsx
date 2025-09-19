@@ -31,12 +31,28 @@ interface ReviewBreakdown {
   duration?: number;
 }
 
+type AttemptListItem = {
+  _id: string;
+  paperId: string;
+  score: number;
+  status: 'in-progress' | 'submitted';
+  startedAt?: string;
+  submittedAt?: string;
+  totalQuestions?: number;
+  durationSec?: number;
+};
+
 export default function AttemptReviewPage() {
   const searchParams = useSearchParams();
   const attemptId = searchParams.get('attemptId') || undefined;
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ReviewBreakdown | null>(null);
+  const [currentPaperId, setCurrentPaperId] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState<AttemptListItem[]>([]);
+  const [attemptsLoading, setAttemptsLoading] = useState(false);
+  const [latestAttemptId, setLatestAttemptId] = useState<string | null>(null);
+  const [showPrevious, setShowPrevious] = useState(false);
 
   useEffect(() => {
     if (!attemptId) return;
@@ -65,6 +81,12 @@ export default function AttemptReviewPage() {
         submittedAt: payload.submittedAt,
         duration: payload.duration
       });
+      const pid = payload.paperId || payload.paper?._id || null;
+      if (pid) {
+        setCurrentPaperId(pid);
+        // Load attempts for this paper to support previous attempts view
+        fetchAttemptsForPaper(pid);
+      }
     } catch (err) {
       console.error(err);
       alert('Could not load review');
@@ -73,38 +95,87 @@ export default function AttemptReviewPage() {
     }
   };
 
+  const fetchAttemptsForPaper = async (paperId: string) => {
+    try {
+      setAttemptsLoading(true);
+      const res = await apiClient.get('/attempts');
+      const items: AttemptListItem[] = res?.data?.data || res?.data || [];
+      const filtered = items
+        .filter(a => String(a.paperId) === String(paperId) && a.status === 'submitted')
+        .sort((a, b) => {
+          const ad = new Date(a.submittedAt || a.startedAt || 0).getTime();
+          const bd = new Date(b.submittedAt || b.startedAt || 0).getTime();
+          return bd - ad; // newest first
+        });
+      setAttempts(filtered);
+      setLatestAttemptId(filtered[0]?._id || null);
+    } catch (err) {
+      console.error('Failed to load attempts list', err);
+    } finally {
+      setAttemptsLoading(false);
+    }
+  };
+
   const handleReattempt = async () => {
     try {
       setLoading(true);
-      let attemptRes;
-      try {
-        attemptRes = await apiClient.get(`/attempts/${attemptId}`);
-      } catch (err) {
-        throw new Error('Failed to fetch attempt details');       
-      }
-      if(!attemptRes){
-               alert('yahi hain raja error')
-      }
+      // 1) Fetch the original attempt to get its paperId
+      const attemptRes = await apiClient.get(`/attempts/${attemptId}`);
       const attemptPayload = attemptRes?.data?.data || attemptRes?.data || null;
-      const paperId = attemptPayload?.paperId;
+      const paperId = attemptPayload?.paperId || attemptPayload?.paper?._id;
       if (!paperId) {
         alert('Cannot determine paper for this attempt');
         return;
       }
 
-      let startRes;
+      // 2) Try to start a fresh attempt
       try {
-        startRes = await apiClient.post(`/attempts/start/${paperId}`);
+        // Hand over the previous attempt id so backend can link attempts
+        const startRes = await apiClient.post(`/attempts/start/${paperId}`, {
+          meta: { previousAttemptId: attemptId }
+        });
+        const startPayload = startRes.data?.data || startRes.data;
+        const newAttemptId = startPayload.attemptId || startPayload._id || null;
+        if (!newAttemptId) throw new Error('Failed to obtain new attempt id');
+        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${newAttemptId}`);
+        return;
       } catch (err: any) {
-        throw new Error(err?.response?.data?.message || err.message || 'Failed to start reattempt');
+        const status = err?.response?.status;
+        const msg = err?.response?.data?.message || err.message;
+        // If an in-progress attempt already exists, resume it
+        if (status === 409) {
+          try {
+            const list = await apiClient.get('/attempts');
+            const items = list?.data?.data || list?.data || [];
+            const existing = items.find((a: any) => a.paperId === paperId && a.status === 'in-progress');
+            if (existing?._id) {
+              router.push(`/subscriptions/attempts/attempt-paper?attemptId=${existing._id}`);
+              return;
+            }
+            // No existing found even though server says conflict
+            alert(msg || 'You already have an ongoing attempt for this paper.');
+            return;
+          } catch (listErr) {
+            console.error('Failed to list attempts after 409:', listErr);
+            alert(msg || 'You already have an ongoing attempt for this paper.');
+            return;
+          }
+        }
+        if (status === 401) {
+          alert('Please login again to reattempt.');
+          router.push('/login');
+          return;
+        }
+        if (status === 403) {
+          alert('Your subscription does not include this paper.');
+          router.push('/subscriptions');
+          return;
+        }
+        throw new Error(msg || 'Failed to start reattempt');
       }
-      const startPayload = startRes.data?.data || startRes.data;
-      const newAttemptId = startPayload.attemptId || startPayload._id || null;
-      if (!newAttemptId) throw new Error('Failed to obtain new attempt id');
-      router.push(`/subscriptions/attempts/attempt-paper?attemptId=${newAttemptId}`);
     } catch (err: any) {
       console.error(err);
-      alert('Could not start reattempt: ' + err.message);
+      alert('Could not start reattempt: ' + (err?.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -131,6 +202,24 @@ export default function AttemptReviewPage() {
     if (percentage >= 70) return { message: "Good job! Keep up the practice!", icon: Target, color: "text-blue-600" };
     if (percentage >= 60) return { message: "Not bad! Review the topics and try again.", icon: TrendingUp, color: "text-orange-600" };
     return { message: "Keep practicing! You'll improve with more attempts.", icon: Zap, color: "text-red-600" };
+  };
+
+  const formatDateTime = (iso?: string) => {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString();
+    } catch {
+      return iso;
+    }
+  };
+
+  const viewAttempt = async (id: string) => {
+    // Update URL to reflect chosen attempt and fetch its review
+    router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${id}`);
+    await fetchReview(id);
+    // collapse the list after switching
+    setShowPrevious(false);
   };
 
   if (!attemptId) {
@@ -181,6 +270,8 @@ export default function AttemptReviewPage() {
   const percentage = Math.round((data.score / data.total) * 100);
   const performance = getPerformanceMessage(data.score, data.total);
   const PerformanceIcon = performance.icon;
+  const isLatest = latestAttemptId ? latestAttemptId === attemptId : true;
+  const previousAttempts = attempts.filter(a => a._id !== attemptId);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -215,6 +306,75 @@ export default function AttemptReviewPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Attempt Context Bar */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+          <div className="text-sm text-gray-700">
+            {isLatest ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                Showing latest attempt
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
+                Viewing an older attempt
+              </span>
+            )}
+            {data.submittedAt && (
+              <span className="ml-2 text-gray-500">• Submitted {formatDateTime(data.submittedAt)}</span>
+            )}
+          </div>
+          <div className="flex gap-3">
+            {!isLatest && latestAttemptId && (
+              <Button
+                onClick={() => viewAttempt(latestAttemptId)}
+                className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white"
+              >
+                Show Latest
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setShowPrevious(prev => !prev)}
+              disabled={attemptsLoading || previousAttempts.length === 0}
+            >
+              {attemptsLoading
+                ? 'Loading…'
+                : previousAttempts.length === 0
+                  ? 'No Last Attempts'
+                  : (showPrevious ? 'Hide Last Attempts' : 'View Last Attempts')}
+            </Button>
+          </div>
+        </div>
+
+        {/* Previous Attempts List */}
+        {showPrevious && previousAttempts.length > 0 && (
+          <div className="mb-10 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Previous Attempts</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {previousAttempts.map(a => {
+                const total = a.totalQuestions ?? data.total;
+                const pct = total > 0 ? Math.round((a.score / total) * 100) : 0;
+                return (
+                  <button
+                    key={a._id}
+                    onClick={() => viewAttempt(a._id)}
+                    className="text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-300 hover:shadow transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-500">{formatDateTime(a.submittedAt || a.startedAt)}</div>
+                        <div className="text-lg font-semibold text-gray-900">{a.score}/{total} ({pct}%)</div>
+                      </div>
+                      <div className="text-indigo-600 text-sm font-medium">View →</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Score Overview */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {/* Main Score Card */}
@@ -356,6 +516,19 @@ export default function AttemptReviewPage() {
             <span>Back to Subscriptions</span>
           </Button>
           
+          <Button
+            variant="outline"
+            onClick={() => setShowPrevious(prev => !prev)}
+            disabled={attemptsLoading || previousAttempts.length === 0}
+            className="px-8 py-4 rounded-xl shadow-sm hover:shadow transform hover:scale-105 transition-all duration-200"
+          >
+            {attemptsLoading
+              ? 'Loading Last Attempts…'
+              : previousAttempts.length === 0
+                ? 'No Last Attempts'
+                : (showPrevious ? 'Hide Last Attempts' : `View Last Attempts (${previousAttempts.length})`)}
+          </Button>
+
           <Button
             onClick={handleReattempt}
             disabled={loading}

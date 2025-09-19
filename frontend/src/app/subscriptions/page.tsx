@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,13 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useContent } from "@/hooks/useContent";
 import { useAttempts } from "@/hooks/useAttempts";
 import apiClient from "@/lib/api";
-import { CheckCircle, Clock, Play, Eye, Trophy, Star } from "lucide-react";
+import {
+  Trophy,
+  Star,
+  Search,
+  FileText,
+  Layers,
+} from "lucide-react";
 
 interface Paper {
   _id: string;
@@ -219,22 +226,45 @@ export default function SubscriptionsPage() {
         </div>
       </div>
 
-      {/* Search and Tabs */}
+      {/* Search + Tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-12">
-          <div className="max-w-2xl mx-auto">
-            <input
-              type="text"
-              placeholder="Search your subscribed content..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-6 py-4 pl-14 pr-12 text-gray-200 bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-md"
-            />
-          </div>
+        <div className="mb-8 relative">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search your subscribed content..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-14 pr-6 py-4 rounded-2xl bg-gray-900 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        {/* Tabs */}
+        <div className="flex justify-center gap-6 mb-12">
+          <button
+            onClick={() => setActiveTab("papers")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "papers"
+                ? "bg-emerald-600 text-white shadow-lg scale-105"
+                : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
+            }`}
+          >
+            <FileText className="w-4 h-4" /> Papers
+          </button>
+          <button
+            onClick={() => setActiveTab("test-series")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "test-series"
+                ? "bg-emerald-600 text-white shadow-lg scale-105"
+                : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
+            }`}
+          >
+            <Layers className="w-4 h-4" /> Test Series
+          </button>
         </div>
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 transition-all">
           {activeTab === "papers"
             ? filteredPapers.map((paper) => {
                 const attemptStatus = getAttemptStatus(paper._id);
@@ -245,7 +275,9 @@ export default function SubscriptionsPage() {
                   >
                     <h3 className="text-xl font-bold text-white mb-2">{paper.title}</h3>
                     <p className="text-gray-400 mb-4">Subject: {paper.subject}</p>
-                    <p className="text-gray-500 text-sm mb-4">Added on {formatDate(paper.createdAt)}</p>
+                    <p className="text-gray-500 text-sm mb-4">
+                      Added on {formatDate(paper.createdAt)}
+                    </p>
                     <div className="text-emerald-400 font-bold text-2xl mb-4">
                       {formatPrice(paper.price)}
                     </div>
@@ -275,23 +307,86 @@ export default function SubscriptionsPage() {
                   </div>
                 );
               })
-            : filteredTestSeries.map((series) => (
-                <div
-                  key={series._id}
-                  className="bg-gray-900/80 rounded-2xl shadow-lg border border-gray-800 p-8 hover:border-blue-600 transition-all"
-                >
-                  <h3 className="text-xl font-bold text-white mb-2">{series.title}</h3>
-                  <p className="text-gray-400 mb-4">{series.description}</p>
-                  <p className="text-gray-500 text-sm mb-4">Created on {formatDate(series.createdAt)}</p>
-                  <div className="text-blue-400 font-bold text-2xl mb-4">{formatPrice(series.price)}</div>
-                  <Button
-                    onClick={() => handleExpandSeries(series._id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+            : filteredTestSeries.map((series) => {
+                const seriesDetails =
+                  testSeriesWithPapers.find((s) => s._id === series._id) || series;
+                return (
+                  <div
+                    key={series._id}
+                    className="bg-gray-900/80 rounded-2xl shadow-lg border border-gray-800 p-8 hover:border-emerald-600 transition-all"
                   >
-                    {expandedSeries === series._id ? "Hide Papers" : "View Papers"}
-                  </Button>
-                </div>
-              ))}
+                    <h3 className="text-xl font-bold text-white mb-2">{series.title}</h3>
+                    <p className="text-gray-400 mb-4">{series.description}</p>
+                    <p className="text-gray-500 text-sm mb-4">
+                      Created on {formatDate(series.createdAt)}
+                    </p>
+                    <div className="text-emerald-400 font-bold text-2xl mb-4">
+                      {formatPrice(series.price)}
+                    </div>
+                    <Button
+                      onClick={() => handleExpandSeries(series._id)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white w-full mb-4"
+                    >
+                      {expandedSeries === series._id ? "Hide Papers" : "View Papers"}
+                    </Button>
+
+                    {/* Accordion for Papers */}
+                    {expandedSeries === series._id && (
+                      <div className="space-y-4 mt-6">
+                        {loadingSeriesDetails ? (
+                          <div className="flex justify-center py-4">
+                            <LoadingSpinner size="sm" />
+                          </div>
+                        ) : seriesDetails?.papers?.length ? (
+                          seriesDetails.papers.map((paper) => {
+                            const attemptStatus = getAttemptStatus(paper._id);
+                            return (
+                              <div
+                                key={paper._id}
+                                className="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-emerald-600 transition-all"
+                              >
+                                <h4 className="text-lg font-semibold text-white mb-1">
+                                  {paper.title}
+                                </h4>
+                                <p className="text-gray-400 text-sm mb-3">
+                                  Subject: {paper.subject}
+                                </p>
+                                <Button
+                                  onClick={() => {
+                                    const attemptForPaper = getAttemptForPaper(paper._id);
+                                    if (attemptStatus.status === "not-attempted") {
+                                      router.push(
+                                        `/subscriptions/attempts/attempt-paper?paperId=${paper._id}`
+                                      );
+                                    } else if (attemptStatus.status === "in-progress") {
+                                      router.push(
+                                        `/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`
+                                      );
+                                    } else {
+                                      router.push(
+                                        `/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`
+                                      );
+                                    }
+                                  }}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                                >
+                                  {attemptStatus.status === "not-attempted"
+                                    ? "Start"
+                                    : attemptStatus.status === "in-progress"
+                                    ? "Resume"
+                                    : "View Results"}
+                                </Button>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <p className="text-gray-500 text-center">No papers in this series.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
         </div>
       </div>
     </div>

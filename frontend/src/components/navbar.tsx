@@ -47,14 +47,14 @@ export function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-gradient-to-r from-sky-950 via-sky-900 to-sky-950 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
+    <nav className=" opacity-95 sticky top-0 z-50 w-full border-b border-emerald-800/30 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 backdrop-blur-lg shadow-lg">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link
               href="/"
-              className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+              className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent hover:opacity-90 transition-opacity"
             >
               SkillBridge
             </Link>
@@ -67,7 +67,7 @@ export function Navbar() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="px-3 py-2 text-sm font-medium rounded-md text-sky-100 hover:text-sky-50 hover:bg-sky-800/60 transition-all duration-200 flex items-center gap-2"
+                  className="px-3 py-2 text-sm font-medium rounded-md text-emerald-100 hover:text-white hover:bg-emerald-800/60 transition-all duration-200 flex items-center gap-2"
                 >
                   <item.icon className="h-4 w-4" />
                   {item.name}
@@ -84,7 +84,7 @@ export function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex items-center gap-2 text-sky-100 hover:bg-sky-800/60 transition-colors"
+                    className="flex items-center gap-2 text-emerald-100 hover:bg-emerald-800/60 transition-colors"
                   >
                     <User className="h-4 w-4" />
                     Account
@@ -92,7 +92,7 @@ export function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-52 bg-background/95 backdrop-blur-sm border border-border/50 shadow-lg rounded-md"
+                  className="w-52 bg-emerald-900/95 backdrop-blur-sm border border-emerald-700/50 shadow-lg rounded-md"
                 >
                   <DropdownMenuItem asChild>
                     <Link
@@ -132,7 +132,7 @@ export function Navbar() {
               </DropdownMenu>
             ) : (
               <Link href="/login">
-                <Button className="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white shadow-md transition-colors">
+                <Button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md px-4 py-2 rounded-md transition-colors">
                   <LogIn className="h-4 w-4" />
                   Login
                 </Button>
@@ -146,12 +146,12 @@ export function Navbar() {
               variant="ghost"
               size="sm"
               onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 hover:bg-sky-800/60 transition-colors"
+              className="inline-flex items-center justify-center p-2 hover:bg-emerald-800/60 transition-colors"
             >
               {isOpen ? (
-                <X className="h-6 w-6 text-sky-100" />
+                <X className="h-6 w-6 text-emerald-100" />
               ) : (
-                <Menu className="h-6 w-6 text-sky-100" />
+                <Menu className="h-6 w-6 text-emerald-100" />
               )}
             </Button>
           </div>
@@ -159,7 +159,7 @@ export function Navbar() {
 
         {/* Mobile Navigation Menu */}
         {isOpen && (
-          <div className="md:hidden border-t border-border/40 bg-sky-950/95 backdrop-blur-sm shadow-lg">
+          <div className="md:hidden border-t border-emerald-800/40 bg-emerald-950/95 backdrop-blur-sm shadow-lg">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -167,7 +167,7 @@ export function Navbar() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="hover:bg-sky-800/60 px-3 py-2 rounded-md text-base font-medium flex items-center gap-2 text-sky-100 transition-all"
+                    className="hover:bg-emerald-800/60 px-3 py-2 rounded-md text-base font-medium flex items-center gap-2 text-emerald-100 transition-all"
                     onClick={() => setIsOpen(false)}
                   >
                     <Icon className="h-4 w-4" />
@@ -177,15 +177,15 @@ export function Navbar() {
               })}
 
               {/* Mobile Account Section */}
-              <div className="border-t border-border/40 pt-3 mt-3">
+              <div className="border-t border-emerald-800/40 pt-3 mt-3">
                 {user ? (
                   <>
-                    <div className="px-3 py-2 text-sm font-semibold text-sky-200">
+                    <div className="px-3 py-2 text-sm font-semibold text-emerald-200">
                       Account
                     </div>
                     <Link
                       href="/dashboard"
-                      className="hover:bg-sky-800/60 px-3 py-2 rounded-md text-base flex items-center gap-2 text-sky-100"
+                      className="hover:bg-emerald-800/60 px-3 py-2 rounded-md text-base flex items-center gap-2 text-emerald-100"
                       onClick={() => setIsOpen(false)}
                     >
                       <User className="h-4 w-4" />
@@ -193,7 +193,7 @@ export function Navbar() {
                     </Link>
                     <Link
                       href="/subscriptions"
-                      className="hover:bg-sky-800/60 px-3 py-2 rounded-md text-base flex items-center gap-2 text-sky-100"
+                      className="hover:bg-emerald-800/60 px-3 py-2 rounded-md text-base flex items-center gap-2 text-emerald-100"
                       onClick={() => setIsOpen(false)}
                     >
                       <CreditCard className="h-4 w-4" />
@@ -201,14 +201,14 @@ export function Navbar() {
                     </Link>
                     <Link
                       href="/settings"
-                      className="hover:bg-sky-800/60 px-3 py-2 rounded-md text-base flex items-center gap-2 text-sky-100"
+                      className="hover:bg-emerald-800/60 px-3 py-2 rounded-md text-base flex items-center gap-2 text-emerald-100"
                       onClick={() => setIsOpen(false)}
                     >
                       Settings
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="hover:bg-sky-800/60 w-full px-3 py-2 rounded-md text-base flex items-center gap-2 text-sky-100"
+                      className="hover:bg-emerald-800/60 w-full px-3 py-2 rounded-md text-base flex items-center gap-2 text-emerald-100"
                     >
                       Sign Out
                     </button>
@@ -216,7 +216,7 @@ export function Navbar() {
                 ) : (
                   <Link
                     href="/login"
-                    className="hover:bg-sky-800/60 px-3 py-2 rounded-md text-base flex items-center gap-2 text-sky-100"
+                    className="hover:bg-emerald-800/60 px-3 py-2 rounded-md text-base flex items-center gap-2 text-emerald-100"
                     onClick={() => setIsOpen(false)}
                   >
                     <LogIn className="h-4 w-4" />
