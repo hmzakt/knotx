@@ -1,8 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useForm, SubmitHandler } from "react-hook-form";
 import Link from "next/link";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import apiClient from "../../lib/api";
 
@@ -25,65 +33,75 @@ interface ErrorInfo {
   type: string;
 }
 
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
 export default function Login() {
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors } 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
   } = useForm<LoginFormData>();
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [errorType, setErrorType] = useState(""); 
+  const [errorType, setErrorType] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(false);
+
   const { login } = useAuth();
 
   const getErrorMessage = (error: ErrorResponse): ErrorInfo => {
-    // Handle network errors
     if (!error.response) {
       return {
-        message: "Network error. Please check your internet connection and try again.",
-        type: "network"
+        message:
+          "Network error. Please check your internet connection and try again.",
+        type: "network",
       };
     }
 
     const statusCode = error.response.status;
     const backendMessage = error.response.data?.message;
-    
+
     switch (statusCode) {
       case 400:
         return {
           message: backendMessage || "Please provide both email and password.",
-          type: "validation"
+          type: "validation",
         };
       case 401:
         return {
-          message: "Invalid email or password. Please check your credentials and try again.",
-          type: "auth"
+          message:
+            "Invalid email or password. Please check your credentials and try again.",
+          type: "auth",
         };
       case 404:
         return {
-          message: "No account found with this email. Please check your email or sign up for a new account.",
-          type: "notfound"
+          message:
+            "No account found with this email. Please check your email or sign up for a new account.",
+          type: "notfound",
         };
       case 409:
         return {
           message: "Account already exists. Please try logging in instead.",
-          type: "conflict"
+          type: "conflict",
         };
       case 429:
         return {
-          message: "Too many login attempts. Please wait a few minutes before trying again.",
-          type: "rateLimit"
+          message: "Too many login attempts. Please wait a few minutes.",
+          type: "rateLimit",
         };
       case 500:
         return {
-          message: "Server error. Please try again later or contact support if the problem persists.",
-          type: "server"
+          message:
+            "Server error. Please try again later or contact support if the problem persists.",
+          type: "server",
         };
       default:
         return {
           message: backendMessage || "An unexpected error occurred. Please try again.",
-          type: "unknown"
+          type: "unknown",
         };
     }
   };
@@ -94,16 +112,13 @@ export default function Login() {
     setErrorType("");
 
     try {
-      console.log("With data:", data);
       const response = await apiClient.post("/users/login", data);
-      console.log("Response received:", response.data);
       const { user, accessToken } = response.data.data;
       login(user, accessToken);
+      // keep previous behavior
       window.location.href = "/dashboard";
-    } catch (error: unknown) {
-      console.log("Login error:", error);
-      console.log("Error data:", (error as ErrorResponse).response?.data);
-      const errorInfo = getErrorMessage(error as ErrorResponse);
+    } catch (err: unknown) {
+      const errorInfo = getErrorMessage(err as ErrorResponse);
       setError(errorInfo.message);
       setErrorType(errorInfo.type);
     } finally {
@@ -112,162 +127,228 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          {error && (
-            <div
-              className={`px-4 py-3 rounded relative ${
-                errorType === "network" 
-                  ? "bg-yellow-100 border border-yellow-400 text-yellow-700"
-                  : errorType === "server"
-                  ? "bg-red-100 border border-red-400 text-red-700"
-                  : errorType === "auth" || errorType === "notfound"
-                  ? "bg-red-100 border border-red-400 text-red-700"
-                  : errorType === "validation"
-                  ? "bg-orange-100 border border-orange-400 text-orange-700"
-                  : errorType === "rateLimit"
-                  ? "bg-purple-100 border border-purple-400 text-purple-700"
-                  : "bg-red-100 border border-red-400 text-red-700"
-              }`}
-              role="alert"
-            >
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  {errorType === "network" && (
-                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  {errorType === "auth" && (
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 00-1 1v3a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  {errorType === "server" && (
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  {errorType === "validation" && (
-                    <svg className="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  {!["network", "auth", "server", "validation"].includes(errorType) && (
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium">
-                    {errorType === "network" && "Connection Error"}
-                    {errorType === "auth" && "Authentication Failed"}
-                    {errorType === "server" && "Server Error"}
-                    {errorType === "validation" && "Validation Error"}
-                    {errorType === "notfound" && "Account Not Found"}
-                    {errorType === "rateLimit" && "Too Many Attempts"}
-                    {!["network", "auth", "server", "validation", "notfound", "rateLimit"].includes(errorType) && "Error"}
-                  </h3>
-                  <div className="mt-2 text-sm">
-                    <p>{error}</p>
-                  </div>
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left hero / branding */}
+        <aside className="lg:col-span-5 hidden lg:flex flex-col justify-center rounded-2xl p-8 bg-gradient-to-b from-emerald-900/60 to-neutral-900/60 ring-1 ring-emerald-800/30 shadow-xl overflow-hidden">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-extrabold text-emerald-300">
+                Welcome back
+              </h1>
+              <p className="text-sm text-emerald-200/80">
+                Sign in to access your dashboard and analytics.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 text-emerald-100/80 space-y-4">
+            <p className="leading-relaxed">
+              Built for students — keep track of attempts, get expert-prepared
+              papers and personalized guidance. Fast, secure and privacy-focused.
+            </p>
+
+            <ul className="space-y-2">
+              <li className="flex items-start gap-3">
+                <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full mt-2" />
+                <span>Structured test-series &amp; expert papers</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full mt-2" />
+                <span>Personalized mentorship &amp; analytics</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full mt-2" />
+                <span>Secure authentication and fast sync</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mt-auto text-sm text-emerald-200/50">
+            <p>Need help? Contact support at mail2Knotx@gmail.com</p>
+          </div>
+        </aside>
+
+        {/* Form card */}
+        <main className="lg:col-span-7 flex items-center justify-center">
+          <div className="w-full max-w-md bg-neutral-900/70 backdrop-blur-md border border-emerald-800/30 rounded-2xl p-8 shadow-2xl">
+            <div className="flex items-center justify-center mb-6">
+              <Image src="/logo.png" alt="Logo" width={56} height={56} />
+            </div>
+
+            <h2 className="text-center text-2xl font-bold text-white mb-1">
+              Sign in to your account
+            </h2>
+            <p className="text-center text-sm text-neutral-300 mb-6">
+              Use your institutional email or sign in with a provider
+            </p>
+
+            {/* Error alert */}
+            {error && (
+              <div
+                role="alert"
+                aria-live="polite"
+                className={cn(
+                  "mb-4 rounded-md px-4 py-3 flex gap-3 items-start",
+                  // color by errorType
+                  errorType === "network"
+                    ? "bg-yellow-900/40 text-yellow-300 border border-yellow-700"
+                    : errorType === "validation"
+                    ? "bg-amber-900/40 text-amber-300 border border-amber-700"
+                    : "bg-red-900/40 text-rose-300 border border-rose-700"
+                )}
+              >
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <div>
+                  <p className="font-medium">
+                    {errorType === "network"
+                      ? "Connection Problem"
+                      : errorType === "validation"
+                      ? "Validation Error"
+                      : errorType === "auth"
+                      ? "Authentication Failed"
+                      : errorType === "notfound"
+                      ? "Account Not Found"
+                      : "Error"}
+                  </p>
+                  <p className="text-sm mt-1">{error}</p>
                 </div>
               </div>
-            </div>
-          )}
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Please enter a valid email address",
-                  },
-                })}
-                type="email"
-                autoComplete="email"
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:z-10 sm:text-sm ${
-                  errors.email 
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500" 
-                    : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
-                }`}
-                placeholder="Email address"
-              />
-              {errors.email && (
-                <p className="mt-2 text-sm text-red-600">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                {...register("password", { 
-                  required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters long"
-                  }
-                })}
-                type="password"
-                autoComplete="current-password"
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:z-10 sm:text-sm ${
-                  errors.password 
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500" 
-                    : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
-                }`}
-                placeholder="Password"
-              />
-              {errors.password && (
-                <p className="mt-2 text-sm text-red-600">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-          </div>
+            )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
+            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="sr-only">
+                  Email address
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400">
+                    <Mail className="w-5 h-5" />
+                  </span>
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    {...register("email", {
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Please enter a valid email address",
+                      },
+                    })}
+                    className={cn(
+                      "block w-full rounded-xl py-3 pl-12 pr-3 text-sm placeholder-neutral-400 focus:outline-none transition",
+                      errors.email
+                        ? "ring-1 ring-rose-600 bg-neutral-900/60 text-white"
+                        : "ring-1 ring-emerald-800/30 bg-neutral-900/40 text-white"
+                    )}
+                    placeholder="Email address"
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
+                  />
                 </div>
-              ) : (
-                "Sign in"
-              )}
-            </button>
-          </div>
+                {errors.email && (
+                  <p id="email-error" className="mt-2 text-xs text-rose-400">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
 
-          <div className="text-center">
-            <Link
-              href="/register"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Don&apos;t have an account? Sign up
-            </Link>
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  Password
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400">
+                    <Lock className="w-5 h-5" />
+                  </span>
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    {...register("password", {
+                      required: "Password is required",
+                      minLength: { value: 6, message: "At least 6 characters" },
+                    })}
+                    className={cn(
+                      "block w-full rounded-xl py-3 pl-12 pr-12 text-sm placeholder-neutral-400 focus:outline-none transition",
+                      errors.password
+                        ? "ring-1 ring-rose-600 bg-neutral-900/60 text-white"
+                        : "ring-1 ring-emerald-800/30 bg-neutral-900/40 text-white"
+                    )}
+                    placeholder="Password"
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? "password-error" : undefined}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-300 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p id="password-error" className="mt-2 text-xs text-rose-400">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-neutral-300">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                    className="h-4 w-4 rounded border-neutral-700 bg-neutral-800 focus:ring-emerald-500"
+                  />
+                  Remember me
+                </label>
+
+                <Link href="/forgot-password" className="text-sm text-emerald-400 hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={cn(
+                    "w-full inline-flex items-center justify-center gap-3 py-3 px-4 rounded-xl text-sm font-semibold transition shadow-sm",
+                    isLoading
+                      ? "bg-emerald-600/80 cursor-wait text-white opacity-80"
+                      : "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  )}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign in"
+                  )}
+                </button>
+              </div>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-neutral-400">
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="text-emerald-300 hover:underline">
+                Sign up
+              </Link>
+            </p>
           </div>
-        </form>
+        </main>
       </div>
     </div>
   );

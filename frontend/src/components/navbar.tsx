@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -47,16 +48,23 @@ export function Navbar() {
   };
 
   return (
-    <nav className=" opacity-95 sticky top-0 z-50 w-full border-b border-emerald-800/30 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 backdrop-blur-lg shadow-lg">
+    <nav className="opacity-95 sticky top-0 z-50 w-full border-b border-emerald-800/30 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 backdrop-blur-lg shadow-lg">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 p-10">
             <Link
               href="/"
-              className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent hover:opacity-90 transition-opacity"
+              className="flex items-center text-2xl font-extrabold tracking-tight hover:opacity-90 transition-opacity"
             >
-              SkillBridge
+              <Image 
+                src="/logo_hor.png" 
+                alt="KnotX logo" 
+                width={120} 
+                height={20} 
+                priority 
+                className="bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent"
+              />
             </Link>
           </div>
 

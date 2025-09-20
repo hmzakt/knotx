@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, ChangeEvent } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
-import Link from 'next/link';
-import { useAuth } from '../../contexts/AuthContext';
-import apiClient from '../../lib/api';
+import { useState, useEffect, ChangeEvent } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+import Link from "next/link";
+import OtpInput from "../../components/otpInput";
+import apiClient from "../../lib/api";
 
 interface RegisterFormData {
   fullname: string;
@@ -13,31 +13,20 @@ interface RegisterFormData {
   password: string;
 }
 
-interface ApiResponse {
-  data: {
-    data: any; // Replace 'any' with your actual user type if known
-  };
-}
-
-interface ErrorResponse {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-}
-
 export default function Register() {
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors } 
-  } = useForm<RegisterFormData>();
-  
+  const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const { login } = useAuth();
+
+  const [expiresInMs, setExpiresInMs] = useState<number | null>(null);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [emailValue, setEmailValue] = useState("");
+  const [cooldownMs, setCooldownMs] = useState<number>(0);
+  const [challenge, setChallenge] = useState<string | null>(null);
+  const [otpEmail, setOtpEmail] = useState<string | null>(null); // email tied to current OTP
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null); // email that was OTP-verified
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -45,169 +34,243 @@ export default function Register() {
     }
   };
 
+  useEffect(() => {
+    if (cooldownMs <= 0) return;
+    const id = setInterval(() => setCooldownMs((ms) => (ms - 1000 <= 0 ? 0 : ms - 1000)), 1000);
+    return () => clearInterval(id);
+  }, [cooldownMs]);
+
+  const sendOtp = async (email: string) => {
+    if (!email) return;
+    setIsSendingOtp(true);
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        // bind OTP session to this email and reset previous verification state
+        setOtpEmail(email);
+        setOtpVerified(false);
+        setVerifiedEmail(null);
+        setExpiresInMs(data.expiresInMs ?? 60000);
+        // start cooldown based on server response if provided
+        if (typeof data.retryAfterMs === "number") setCooldownMs(data.retryAfterMs);
+        if (typeof data.challenge === "string") setChallenge(data.challenge);
+        setError("");
+      } else {
+        if (res.status === 429 && typeof data.retryAfterMs === "number") {
+          setCooldownMs(data.retryAfterMs);
+          setError(data.message || "Please wait before requesting a new OTP.");
+        } else {
+          setError(data.message || "Failed to send OTP");
+        }
+      }
+    } catch (err) {
+      setError("Failed to send OTP. Try again.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // When email changes: reset OTP UI; do NOT auto-send (send only on button click)
+  useEffect(() => {
+    // Empty email: clear OTP state
+    if (!emailValue) {
+      setExpiresInMs(null);
+      setChallenge(null);
+      setOtpEmail(null);
+      setOtpVerified(false);
+      setVerifiedEmail(null);
+      setCooldownMs(0);
+      return;
+    }
+    // Different email than current OTP email: reset local OTP state (no auto-send)
+    if (emailValue !== otpEmail) {
+      // Reset local OTP state immediately
+      setExpiresInMs(null);
+      setChallenge(null);
+      setOtpVerified(false);
+      setVerifiedEmail(null);
+      setCooldownMs(0);
+      return;
+    }
+  }, [emailValue]);
+
   const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
+    if (!otpVerified) {
+      setError("Please verify your OTP before registering.");
+      return;
+    }
+    if (!verifiedEmail || data.email !== verifiedEmail) {
+      setError("Email changed after verification. Please verify OTP for the current email.");
+      return;
+    }
+
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
-      // Prepare form data for file upload
       const formData = new FormData();
-      formData.append('fullname', data.fullname);
-      formData.append('email', data.email);
-      formData.append('username', data.username);
-      formData.append('password', data.password);
-      
+      formData.append("fullname", data.fullname);
+      formData.append("email", data.email);
+      formData.append("username", data.username);
+      formData.append("password", data.password);
+
       if (avatarFile) {
-        formData.append('avatar', avatarFile);
+        formData.append("avatar", avatarFile);
       }
 
-      // Call your backend register endpoint
-      const response = await apiClient.post<ApiResponse>('/users/register', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      await apiClient.post("/users/register", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      
-      // Backend returns ApiResponse with data field containing user info
-      const user = response.data.data;
 
-      // Note: Backend doesn't return tokens on registration, user needs to login separately
-      // Redirect to login page with success message
-      window.location.href = '/login?message=Registration successful. Please login to continue.';
-
-    } catch (err: unknown) {
-      console.error('Registration error:', err);
-      const errorMessage = (err as ErrorResponse).response?.data?.message || 'Failed to create an account. Please try again.';
-      setError(errorMessage);
+      window.location.href = "/login?message=Registration successful. Please login.";
+    } catch (err) {
+      setError("Failed to create an account. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create a new account
-          </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+      <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-lg p-8 space-y-6">
+        {/* Logo */}
+        <div className="flex justify-center mb-4">
+          <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
-          <div className="rounded-md shadow-sm -space-y-px">
-            {/* Avatar Upload Field */}
-            <div>
-              <label htmlFor="avatar" className="block text-sm font-medium text-gray-700 mb-2">
-                Profile Picture (Optional)
-              </label>
-              <input
-                type="file"
-                id="avatar"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-              />
-            </div>
-            
-            {/* Full Name Field */}
-            <div>
-              <label htmlFor="fullname" className="sr-only">
-                Full Name
-              </label>
-              <input
-                {...register('fullname', { required: 'Full name is required' })}
-                type="text"
-                autoComplete="name"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Full Name"
-              />
-              {errors.fullname && <p className="mt-2 text-sm text-red-600">{errors.fullname.message}</p>}
-            </div>
-            
-            {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^\S+@\S+$/i,
-                    message: 'Invalid email address',
-                  },
-                })}
-                type="email"
-                autoComplete="email"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-              {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
-            </div>
-            
-            {/* Username Field */}
-            <div>
-              <label htmlFor="username" className="sr-only">
-                Username
-              </label>
-              <input
-                {...register('username', { 
-                  required: 'Username is required',
-                  minLength: {
-                    value: 3,
-                    message: 'Username must be at least 3 characters',
-                  },
-                  pattern: {
-                    value: /^[a-zA-Z0-9_]+$/,
-                    message: 'Username can only contain letters, numbers, and underscores',
-                  },
-                })}
-                type="text"
-                autoComplete="username"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Username"
-              />
-              {errors.username && <p className="mt-2 text-sm text-red-600">{errors.username.message}</p>}
-            </div>
-            
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: {
-                    value: 6,
-                    message: 'Password must be at least 6 characters',
-                  },
-                })}
-                type="password"
-                autoComplete="new-password"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-              {errors.password && <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>}
-            </div>
+
+        <h2 className="text-center text-2xl font-bold text-white">
+          Create a new account
+        </h2>
+
+        {error && (
+          <div className="bg-red-700 border border-red-600 text-red-100 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
+        <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+          {/* Avatar Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-200 mb-2">
+              Profile Picture (Optional)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-200
+                file:mr-4 file:py-2 file:px-4 file:rounded-md 
+                file:border-0 file:text-sm file:font-semibold 
+                file:bg-emerald-600 file:text-white hover:file:bg-emerald-700"
+            />
           </div>
 
+          {/* Full Name */}
           <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {isLoading ? 'Creating Account...' : 'Sign up'}
-            </button>
+            <input
+              {...register("fullname", { required: "Full name is required" })}
+              type="text"
+              placeholder="Full Name"
+              className="w-full px-3 py-2 border border-gray-600 rounded-md 
+                         bg-gray-700 text-white 
+                         focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+            />
+            {errors.fullname && <p className="text-red-400 text-sm">{errors.fullname.message}</p>}
           </div>
+
+          {/* Email with OTP */}
+          <div>
+            <div className="flex space-x-2">
+              <input
+                {...register("email", { required: "Email is required" })}
+                onChange={(e) => setEmailValue(e.target.value)}
+                type="email"
+                placeholder="Email address"
+                className="flex-1 px-3 py-2 border border-gray-600 rounded-md 
+                           bg-gray-700 text-white 
+                           focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => sendOtp(emailValue)}
+                disabled={cooldownMs > 0 || isSendingOtp}
+                className="px-3 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isSendingOtp ? (
+                  <span className="inline-flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    Sending...
+                  </span>
+                ) : cooldownMs > 0 ? (
+                  `Wait ${Math.ceil(cooldownMs / 1000)}s`
+                ) : expiresInMs && !otpVerified ? (
+                  "Resend OTP"
+                ) : (
+                  "Send OTP"
+                )}
+              </button>
+            </div>
+            {errors.email && <p className="text-red-400 text-sm">{errors.email.message}</p>}
+          </div>
+
+          {/* OTP Input */}
+          {expiresInMs && !otpVerified && (
+            <OtpInput
+              email={otpEmail ?? emailValue}
+              challenge={challenge ?? ""}
+              expiresInMs={expiresInMs}
+              onVerify={() => {
+                setOtpVerified(true);
+                setVerifiedEmail(otpEmail ?? emailValue);
+              }}
+            />
+          )}
+
+          {/* Username */}
+          <div>
+            <input
+              {...register("username", { required: "Username is required" })}
+              type="text"
+              placeholder="Username"
+              className="w-full px-3 py-2 border border-gray-600 rounded-md 
+                         bg-gray-700 text-white 
+                         focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+            />
+            {errors.username && <p className="text-red-400 text-sm">{errors.username.message}</p>}
+          </div>
+
+          {/* Password */}
+          <div>
+            <input
+              {...register("password", { required: "Password is required", minLength: { value: 6, message: "Min 6 chars" } })}
+              type="password"
+              placeholder="Password"
+              className="w-full px-3 py-2 border border-gray-600 rounded-md 
+                         bg-gray-700 text-white 
+                         focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+            />
+            {errors.password && <p className="text-red-400 text-sm">{errors.password.message}</p>}
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-2 px-4 bg-emerald-600 text-white font-medium rounded-md hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {isLoading ? "Creating Account..." : "Sign up"}
+          </button>
 
           <div className="text-center">
-            <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link href="/login" className="font-medium text-emerald-400 hover:text-emerald-300">
               Already have an account? Sign in
             </Link>
           </div>
