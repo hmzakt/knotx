@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "../contexts/AuthContext";
 import { SubscriptionProvider } from "../contexts/SubscriptionContext";
 import { Navbar } from "@/components/navbar";
+import { RouteLoadingProvider } from "@/contexts/RouteLoadingContext";
+import RouteLoadingOverlay from "@/components/RouteLoadingOverlay";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,8 +80,11 @@ export default function RootLayout({
       >
         <AuthProvider>
           <SubscriptionProvider>
-            <Navbar />
-            {children}
+            <RouteLoadingProvider>
+              <RouteLoadingOverlay />
+              <Navbar />
+              {children}
+            </RouteLoadingProvider>
           </SubscriptionProvider>
         </AuthProvider>
       </body>

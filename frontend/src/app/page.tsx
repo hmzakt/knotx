@@ -12,12 +12,15 @@ import {
   Minus,
   Plus,
   PlaneTakeoff,
+  CrownIcon,
 } from "lucide-react";
 
 import BeamsBackground from "@/components/kokonutui/beams-background";
 import Link from "next/link";
+import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import { BookOpenCheck, FileText, Users, BarChart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import PaymentModal from "../components/PaymentModal";
 
 type Offer = {
   id: number;
@@ -57,10 +60,16 @@ const offers: Offer[] = [
   },
 ];
 
+
+
 export default function Home() {
+  const { start, stop } = useRouteLoading();
   const [expanded, setExpanded] = useState<number | null>(null);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"monthly" | "yearly">("monthly");
+    const [paymentModal, setPaymentModal] = useState<{ isOpen: boolean; data: any }>({
+    isOpen: false,
+    data: null,
+  });
 
   const paperFeatures = [
     { text: "Multiple attempts for each paper", included: true },
@@ -147,7 +156,7 @@ export default function Home() {
                   Prepared with feedback by learners and guidance of tutors
                 </p>
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  <Link href="/explore">
+                  <Link href="/explore" onClick={() => start("nav")} onMouseDown={() => start("nav")}>
                     <Button className="w-full cursor-pointer bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-4 text-base rounded-lg shadow-md">
                       Explore Courses
                     </Button>
@@ -265,7 +274,7 @@ export default function Home() {
               ))}
             </div>
             <span className="text-base text-gray-400">*from date of purchase</span>
-            <Link href="/explore">
+            <Link href="/explore" onClick={() => start("nav")} onMouseDown={() => start("nav")}>
               <Button className="mt-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg w-full">
                 Get Started
               </Button>
@@ -336,8 +345,23 @@ export default function Home() {
               ))}
             </div>
             <span className="text-base text-gray-400">*from date of purchase</span>
-            <Button className="mt-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg">
-              Get Started
+            <Button className="mt-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
+            onClick={() =>
+              setPaymentModal({
+                isOpen: true,
+                data: {
+                  type: "all-access",
+                  itemName: "KnotX Pro - All Access (1 Year)",
+                  itemDescription:
+                    "Unlimited access to all test series, papers, and premium features for 12 months.",
+                  baseAmount: 800000, // amount in paise (₹8000)
+                  currency: "INR",
+                  durationDays: 365,
+                },
+              })
+            }
+            >
+              <CrownIcon/>Get Pro
             </Button>
           </Card>
         </div>
@@ -372,6 +396,17 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={paymentModal.isOpen}
+        onClose={() => setPaymentModal({ isOpen: false, data: null })}
+        onPaymentSuccess={() => {
+          // Optionally, you can add routing or a toast here
+          console.log("Payment successful for All Access");
+        }}
+        paymentData={paymentModal.data}
+      />
 
       {/* Footer */}
       <footer className="bg-card py-10 px-4 mt-16 border-t border-border">

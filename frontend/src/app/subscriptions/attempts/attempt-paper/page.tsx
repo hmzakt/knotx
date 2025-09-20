@@ -5,6 +5,7 @@ import apiClient from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Clock, CheckCircle, Trophy } from "lucide-react";
+import { useRouteLoading } from '@/contexts/RouteLoadingContext';
 
 
 interface Option {
@@ -27,6 +28,7 @@ interface StartAttemptResponse {
 
 export default function AttemptPaperPage() {
   const router = useRouter();
+  const { start } = useRouteLoading();
   const searchParams = useSearchParams();
   const paperId = searchParams.get('paperId') || undefined;
   const existingAttemptId = searchParams.get('attemptId') || undefined;
@@ -314,7 +316,7 @@ export default function AttemptPaperPage() {
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">No Questions Loaded</h2>
         <p className="text-gray-600 mb-6">There was an issue loading the questions for this attempt.</p>
-        <Button onClick={() => router.push('/subscriptions')} className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white">
+        <Button onClick={() => { start('nav'); router.push('/subscriptions'); }} className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white">
           Back to Subscriptions
         </Button>
       </div>
@@ -333,7 +335,7 @@ export default function AttemptPaperPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
-                onClick={() => router.push('/subscriptions')}
+                onClick={() => { start('nav'); router.push('/subscriptions'); }}
                 variant="outline"
                 className="flex items-center space-x-2"
               >

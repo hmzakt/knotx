@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +54,8 @@ export default function SubscriptionsPage() {
   const [loadingSeriesDetails, setLoadingSeriesDetails] = useState(false);
 
   const router = useRouter();
+  const { start } = useRouteLoading();
+  const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const { subscriptions, loading: loadingSubscriptions, error: subscriptionError, initialized } =
     useSubscription();
   const { papers, testSeries, loading: loadingContent, error: contentError } = useContent();
@@ -183,7 +186,7 @@ export default function SubscriptionsPage() {
               started!
             </p>
             <Button
-              onClick={() => (window.location.href = "/explore")}
+              onClick={() => { start("nav"); window.location.href = "/explore"; }}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               Explore Content
@@ -281,6 +284,8 @@ export default function SubscriptionsPage() {
                     </div>
                     <Button
                       onClick={() => {
+                        start("nav");
+                        setNavigatingId(paper._id);
                         const attemptForPaper = getAttemptForPaper(paper._id);
                         if (attemptStatus.status === "not-attempted") {
                           router.push(`/subscriptions/attempts/attempt-paper?paperId=${paper._id}`);
@@ -294,9 +299,12 @@ export default function SubscriptionsPage() {
                           );
                         }
                       }}
+                      disabled={navigatingId === paper._id}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
                     >
-                      {attemptStatus.status === "not-attempted"
+                      {navigatingId === paper._id
+                        ? "Loading..."
+                        : attemptStatus.status === "not-attempted"
                         ? "Start"
                         : attemptStatus.status === "in-progress"
                         ? "Resume"
@@ -351,6 +359,8 @@ export default function SubscriptionsPage() {
                                 </p>
                                 <Button
                                   onClick={() => {
+                                    start("nav");
+                                    setNavigatingId(paper._id);
                                     const attemptForPaper = getAttemptForPaper(paper._id);
                                     if (attemptStatus.status === "not-attempted") {
                                       router.push(
@@ -366,9 +376,12 @@ export default function SubscriptionsPage() {
                                       );
                                     }
                                   }}
+                                  disabled={navigatingId === paper._id}
                                   className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
                                 >
-                                  {attemptStatus.status === "not-attempted"
+                                  {navigatingId === paper._id
+                                    ? "Loading..."
+                                    : attemptStatus.status === "not-attempted"
                                     ? "Start"
                                     : attemptStatus.status === "in-progress"
                                     ? "Resume"

@@ -9,16 +9,10 @@ import { useContent } from "@/hooks/useContent";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAttempts } from "@/hooks/useAttempts";
 import { useRouter } from "next/navigation";
+import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import apiClient from "@/lib/api";
-import {
-  Search,
-  X,
-  Filter,
-  SortAsc,
-  SortDesc,
-  BookOpen,
-  Layers,
-} from "lucide-react";
+import { Search, X, Filter, SortAsc, SortDesc, BookOpen, Layers, Lock, CrownIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 // -------------------------
 // Types
@@ -37,7 +31,7 @@ interface TestSeries {
   description?: string;
   price: number;
   createdAt: string;
-  papers?: Paper[]; // included when fetching series details
+  papers?: Paper[];
   papersCount?: number;
 }
 
@@ -45,30 +39,31 @@ type TabType = "papers" | "test-series";
 type SortOption = "newest" | "oldest" | "priceLow" | "priceHigh";
 
 export default function ExplorePage() {
+  const router = useRouter();
+  const { start, stop } = useRouteLoading();
+  const { user } = useAuth();
+  const { subscriptions, loading: loadingSubscriptions } = useSubscription();
+  const { papers, testSeries, loading: loadingContent, error: contentError } = useContent();
+  const { getAttemptForPaper, getAttemptStatus } = useAttempts();
+
   const [activeTab, setActiveTab] = useState<TabType>("papers");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [paymentModal, setPaymentModal] = useState<{
-    isOpen: boolean;
-    data: any;
-  }>({ isOpen: false, data: null });
+  const [paymentModal, setPaymentModal] = useState<{ isOpen: boolean; data: any }>({
+    isOpen: false,
+    data: null,
+  });
   const [expandedSeries, setExpandedSeries] = useState<string | null>(null);
   const [testSeriesWithPapers, setTestSeriesWithPapers] = useState<TestSeries[]>([]);
   const [loadingSeriesDetails, setLoadingSeriesDetails] = useState(false);
 
-  const { subscriptions, loading: loadingSubscriptions, error: subscriptionError, initialized } =
-    useSubscription();
-  const { papers, testSeries, loading, error } = useContent();
-  const { getAttemptForPaper, getAttemptStatus } = useAttempts();
-  const router = useRouter();
-
+  // ------------------------------
+  // Helper functions
+  // ------------------------------
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(price);
 
-  // ------------------------------
-  // Filtering + Sorting
-  // ------------------------------
   const categories = useMemo(() => {
     if (activeTab === "papers") {
       return Array.from(new Set((papers || []).map((p) => p.subject)));
@@ -106,7 +101,7 @@ export default function ExplorePage() {
     let result = (testSeries || []).filter(
       (s) =>
         (s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (s.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())) &&
+          (s.description?.toLowerCase() || "").includes(searchQuery.toLowerCase())) &&
         (categoryFilter === "all" || (s.description?.includes(categoryFilter) || false))
     );
     switch (sortBy) {
@@ -126,51 +121,32 @@ export default function ExplorePage() {
     return result;
   }, [testSeries, searchQuery, categoryFilter, sortBy]);
 
-  // Check if user has access to specific items
   const userHasAccessToItem = useMemo(() => {
     const accessMap: Record<string, boolean> = {};
-    
     if (subscriptions?.hasAllAccess) {
-      // User has all-access, so they have access to everything
-      (papers || []).forEach(paper => {
-        accessMap[`paper-${paper._id}`] = true;
-      });
-      (testSeries || []).forEach(series => {
-        accessMap[`test-series-${series._id}`] = true;
-      });
+      (papers || []).forEach((p) => (accessMap[`paper-${p._id}`] = true));
+      (testSeries || []).forEach((s) => (accessMap[`test-series-${s._id}`] = true));
     } else if (subscriptions) {
-      // Check individual paper subscriptions
       subscriptions.subscriptions.singlePapers.forEach((sub: any) => {
         const paperId = sub.itemId?._id || sub.itemId;
         if (paperId) accessMap[`paper-${paperId}`] = true;
       });
-      
-      // Check test series subscriptions
       subscriptions.subscriptions.testSeries.forEach((sub: any) => {
         const seriesId = sub.itemId?._id || sub.itemId;
         if (seriesId) accessMap[`test-series-${seriesId}`] = true;
       });
     }
-    
     return accessMap;
   }, [subscriptions, papers, testSeries]);
 
-  type ApiResponse<T> = {
-    statusCode: number;
-    data: T;
-    message: string;
-    success: boolean;
-  };
-
+  // Fetch series details
   const fetchTestSeriesWithPapers = async (seriesId: string) => {
     try {
       setLoadingSeriesDetails(true);
-      const response = await apiClient.get<ApiResponse<TestSeries>>(
-        `/private/test-series/${seriesId}`
-      );
+      const response = await apiClient.get(`/private/test-series/${seriesId}`);
       return response.data.data;
     } catch (err) {
-      console.error("Error fetching test series details:", err);
+      console.error(err);
       return null;
     } finally {
       setLoadingSeriesDetails(false);
@@ -178,15 +154,11 @@ export default function ExplorePage() {
   };
 
   const handleExpandSeries = async (seriesId: string) => {
-    if (expandedSeries === seriesId) {
-      setExpandedSeries(null);
-      return;
-    }
+    if (expandedSeries === seriesId) return setExpandedSeries(null);
+
     const existing = testSeriesWithPapers.find((s) => s._id === seriesId);
-    if (existing) {
-      setExpandedSeries(seriesId);
-      return;
-    }
+    if (existing) return setExpandedSeries(seriesId);
+
     const details = await fetchTestSeriesWithPapers(seriesId);
     if (details) {
       setTestSeriesWithPapers((prev) => [...prev, details]);
@@ -194,96 +166,103 @@ export default function ExplorePage() {
     }
   };
 
+  const [navigatingId, setNavigatingId] = useState<string | null>(null);
+
   const handleItemClick = (item: Paper | TestSeries, type: TabType, hasAccess: boolean) => {
     if (!hasAccess) {
-      setPaymentModal({
-        isOpen: true,
-        data: { type, item }
-      });
+      setPaymentModal({ isOpen: true, data: { type, item } });
       return;
     }
-
     if (type === "papers") {
       const status = getAttemptStatus((item as Paper)._id);
       const attempt = getAttemptForPaper((item as Paper)._id);
-      if (status.status === "not-attempted") {
+      start("nav");
+      setNavigatingId(item._id);
+      if (status.status === "not-attempted")
         router.push(`/subscriptions/attempts/attempt-paper?paperId=${item._id}`);
-      } else if (status.status === "in-progress") {
+      else if (status.status === "in-progress")
         router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attempt?._id}`);
-      } else {
-        router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${attempt?._id}`);
-      }
+      else router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${attempt?._id}`);
     } else {
-      // For test series with access, direct users to their subscriptions page
-      // where they can expand the series and start individual papers
+      start("nav");
+      setNavigatingId(item._id);
       router.push(`/subscriptions`);
     }
   };
 
-  // ------------------------------
-  // Loading & Error
-  // ------------------------------
-  if (loading || loadingSubscriptions)
+  // ----------------------------------
+  // Loading / Error
+  // ----------------------------------
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 text-gray-100 px-4">
+        <Lock className="w-16 h-16 text-emerald-500 mb-6" />
+        <h2 className="text-3xl font-bold mb-2 text-center">Access Restricted</h2>
+        <p className="text-gray-400 mb-6 text-center">
+          You need to sign up or log in to explore premium content.
+        </p>
+        <Button
+          className="bg-emerald-600 hover:bg-emerald-700 px-6 py-3 text-lg"
+          onClick={() => router.push("./register")}
+        >
+          Sign Up Now
+        </Button>
+      </div>
+    );
+  }
+
+  if (loadingContent || loadingSubscriptions)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <LoadingSpinner size="lg" />
       </div>
     );
 
-  if (error)
+  if (contentError)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
-        <p>{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-100">
+        <p>{contentError}</p>
       </div>
     );
 
+  // ----------------------------------
+  // Main Page
+  // ----------------------------------
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
-      {/* Hero */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white py-12">
-        <div className="text-center max-w-2xl mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-4">Explore Our Content</h1>
-          <p className="mb-6">Access premium papers and test series</p>
-          <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
-            {subscriptions?.hasAllAccess ? (
-              <>
-                <h3 className="text-2xl font-bold mb-2">All-Access Subscription (Active)</h3>
-                <p className="mb-4">You have unlimited access to all content.</p>
-                <div className="text-3xl font-bold mb-6 text-emerald-400">Subscribed</div>
-                <Button disabled className="w-full bg-gray-600 text-white cursor-not-allowed">
-                  Subscribed
-                </Button>
-              </>
-            ) : (
-              <>
-                <h3 className="text-2xl font-bold mb-2">All-Access Subscription</h3>
-                <p className="mb-4">Get unlimited access to all content</p>
-                <div className="text-3xl font-bold mb-6">
-                  {formatPrice(999)} <span className="text-lg">/month</span>
-                </div>
-                <Button 
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                  onClick={() => setPaymentModal({
-                    isOpen: true,
-                    data: { type: 'all-access' }
-                  })}
-                >
-                  Get All-Access
-                </Button>
-              </>
-            )}
-          </div>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-emerald-700 to-emerald-900 text-white py-16 px-4 relative overflow-hidden rounded-b-3xl">
+        <div className="max-w-4xl mx-auto text-center">
+          <img src="/logo.png" alt="Logo" className="mx-auto w-28 h-auto mb-6" />
+          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight">
+            Explore Premium Content
+          </h1>
+          <p className="text-lg md:text-xl text-gray-200 mb-8">
+            Access curated papers and test series to boost your preparation.
+          </p>
+          {subscriptions?.hasAllAccess ? (
+            <span className="text-emerald-400 text-xl font-semibold">Pro Subscribed - You can access all our contact</span>
+          ) : (
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 px-8 py-3 text-lg"
+              onClick={() => setPaymentModal({ isOpen: true, data: { type: "all-access" } })}
+            >
+             <CrownIcon/> Get Pro
+            </Button>
+          )}
         </div>
+        <div className="absolute -right-32 -bottom-32 w-96 h-96 rounded-full bg-emerald-800 opacity-20 blur-3xl"></div>
+        <div className="absolute -left-32 -top-32 w-96 h-96 rounded-full bg-emerald-600 opacity-20 blur-3xl"></div>
       </div>
 
       {/* Search + Tabs + Filters */}
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 py-10 space-y-8">
         {/* Search */}
         <div className="relative max-w-lg mx-auto">
           <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search papers or test series..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-10 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 text-gray-100"
@@ -302,23 +281,25 @@ export default function ExplorePage() {
         <div className="flex justify-center space-x-4">
           <button
             onClick={() => setActiveTab("papers")}
-            className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${activeTab === "papers"
-              ? "bg-emerald-600 text-white scale-105 shadow-lg"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-              }`}
+            className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+              activeTab === "papers"
+                ? "bg-emerald-600 text-white scale-105 shadow-lg"
+                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+            }`}
           >
-            <BookOpen className="w-4 h-4 inline mr-2" /> Papers (
-            {filteredAndSortedPapers.length})
+            <BookOpen className="w-4 h-4 inline mr-2" />
+            Papers ({filteredAndSortedPapers.length})
           </button>
           <button
             onClick={() => setActiveTab("test-series")}
-            className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${activeTab === "test-series"
-              ? "bg-emerald-600 text-white scale-105 shadow-lg"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-              }`}
+            className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+              activeTab === "test-series"
+                ? "bg-emerald-600 text-white scale-105 shadow-lg"
+                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+            }`}
           >
-            <Layers className="w-4 h-4 inline mr-2" /> Test Series (
-            {filteredAndSortedSeries.length})
+            <Layers className="w-4 h-4 inline mr-2" />
+            Test Series ({filteredAndSortedSeries.length})
           </button>
         </div>
 
@@ -360,17 +341,10 @@ export default function ExplorePage() {
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(activeTab === "papers"
-            ? filteredAndSortedPapers
-            : filteredAndSortedSeries
-          ).map((item) => {
+          {(activeTab === "papers" ? filteredAndSortedPapers : filteredAndSortedSeries).map((item) => {
             const itemType = activeTab === "papers" ? "paper" : "test-series";
             const hasAccess = userHasAccessToItem[`${itemType}-${item._id}`] || subscriptions?.hasAllAccess;
-            const attemptStatus = activeTab === "papers" ? getAttemptStatus(item._id) : null;
             const isPaper = "subject" in item;
-            const seriesDetails = !isPaper
-              ? testSeriesWithPapers.find((s) => s._id === item._id) || (item as TestSeries)
-              : null;
 
             return (
               <div
@@ -378,103 +352,28 @@ export default function ExplorePage() {
                 className="bg-gray-900 rounded-xl shadow p-6 border border-gray-700 hover:border-emerald-500 hover:scale-[1.02] transition-all duration-300"
               >
                 <h3 className="text-lg font-semibold text-white">{item.title}</h3>
-                <p className="text-sm text-gray-400">
-                  {"subject" in item
-                    ? item.subject
-                    : (item as TestSeries).description || "No description"}
+                <p className="text-sm text-gray-400 mb-3">
+                  {isPaper ? (item as Paper).subject : (item as TestSeries).description || "No description"}
                 </p>
                 <div className="my-3">
-                  <SubscriptionStatus
-                    type={itemType}
-                    itemId={item._id}
-                  />
+                  <SubscriptionStatus type={itemType} itemId={item._id} />
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-emerald-400">{formatPrice(item.price)}</span>
-                  {hasAccess ? (
-                    isPaper ? (
-                      <Button
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                        onClick={() => handleItemClick(item, activeTab, hasAccess)}
-                      >
-                        {attemptStatus?.status === "not-attempted"
-                          ? "Start"
-                          : attemptStatus?.status === "in-progress"
-                          ? "Resume"
-                          : "View Results"}
-                      </Button>
-                    ) : (
-                      <Button
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                        onClick={() => handleExpandSeries(item._id)}
-                      >
-                        {expandedSeries === item._id ? "Hide Papers" : "View Papers"}
-                      </Button>
-                    )
-                  ) : (
-                    <Button
-                      className="bg-emerald-600 hover:bg-emerald-700"
-                      onClick={() =>
-                        setPaymentModal({ isOpen: true, data: { type: activeTab, item } })
-                      }
-                    >
-                      Buy Now
-                    </Button>
-                  )}
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                    disabled={navigatingId === item._id}
+                    onClick={() => (isPaper ? handleItemClick(item, activeTab, hasAccess) : handleExpandSeries(item._id))}
+                  >
+                    {navigatingId === item._id
+                      ? "Loading..."
+                      : isPaper
+                        ? "View"
+                        : expandedSeries === item._id
+                          ? "Hide Papers"
+                          : "View Papers"}
+                  </Button>
                 </div>
-
-                {/* Accordion for Test Series papers when user has access */}
-                {!isPaper && hasAccess && expandedSeries === item._id && (
-                  <div className="space-y-4 mt-6">
-                    {loadingSeriesDetails ? (
-                      <div className="flex justify-center py-4">
-                        <LoadingSpinner size="sm" />
-                      </div>
-                    ) : (seriesDetails as TestSeries)?.papers?.length ? (
-                      (seriesDetails as TestSeries).papers!.map((paper) => {
-                        const innerStatus = getAttemptStatus(paper._id);
-                        const attemptForPaper = getAttemptForPaper(paper._id);
-                        return (
-                          <div
-                            key={paper._id}
-                            className="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-emerald-600 transition-all"
-                          >
-                            <h4 className="text-lg font-semibold text-white mb-1">
-                              {paper.title}
-                            </h4>
-                            <p className="text-gray-400 text-sm mb-3">Subject: {paper.subject}</p>
-                            <Button
-                              onClick={() => {
-                                if (innerStatus.status === "not-attempted") {
-                                  router.push(
-                                    `/subscriptions/attempts/attempt-paper?paperId=${paper._id}`
-                                  );
-                                } else if (innerStatus.status === "in-progress") {
-                                  router.push(
-                                    `/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`
-                                  );
-                                } else {
-                                  router.push(
-                                    `/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`
-                                  );
-                                }
-                              }}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
-                            >
-                              {innerStatus.status === "not-attempted"
-                                ? "Start"
-                                : innerStatus.status === "in-progress"
-                                ? "Resume"
-                                : "View Results"}
-                            </Button>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-gray-500 text-center">No papers in this series.</p>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}

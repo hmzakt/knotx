@@ -172,16 +172,12 @@ export default function Login() {
         {/* Form card */}
         <main className="lg:col-span-7 flex items-center justify-center">
           <div className="w-full max-w-md bg-neutral-900/70 backdrop-blur-md border border-emerald-800/30 rounded-2xl p-8 shadow-2xl">
-            <div className="flex items-center justify-center mb-6">
-              <Image src="/logo.png" alt="Logo" width={56} height={56} />
+            <div className="flex items-center justify-center mb-4">
+              <Image src="/logo.png" alt="Logo" width={90} height={90} />
             </div>
-
-            <h2 className="text-center text-2xl font-bold text-white mb-1">
+            <h2 className="text-center text-2xl font-bold text-white mb-4">
               Sign in to your account
             </h2>
-            <p className="text-center text-sm text-neutral-300 mb-6">
-              Use your institutional email or sign in with a provider
-            </p>
 
             {/* Error alert */}
             {error && (

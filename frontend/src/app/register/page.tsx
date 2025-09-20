@@ -143,8 +143,8 @@ export default function Register() {
       {/* Form card only (removed aside/hero) */}
       <main className="w-full max-w-md sm:max-w-lg md:max-w-xl flex items-center justify-center">
         <div className="w-full bg-neutral-900/70 backdrop-blur-md border border-emerald-800/30 rounded-2xl p-6 sm:p-8 shadow-2xl">
-            <div className="flex items-center justify-center mb-6">
-              <Image src="/logo.png" alt="Logo" width={56} height={56} />
+            <div className="flex items-center justify-center mb-2">
+              <Image src="/logo.png" alt="Logo" width={110} height={110} />
             </div>
 
             <h2 className="text-center text-2xl font-bold text-white mb-1">Create a new account</h2>

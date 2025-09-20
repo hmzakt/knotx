@@ -21,11 +21,14 @@ import {
   LogIn,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import apiClient from "@/lib/api";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, logout } = useAuth();
+  const { start, stop } = useRouteLoading();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -37,6 +40,8 @@ export function Navbar() {
 
   const handleLogout = async () => {
     try {
+      setIsLoggingOut(true);
+      start("logout");
       await apiClient.post("/users/logout");
       logout();
       setIsOpen(false);
@@ -44,6 +49,9 @@ export function Navbar() {
       console.error("Logout error:", error);
       logout();
       setIsOpen(false);
+    } finally {
+      setIsLoggingOut(false);
+      stop();
     }
   };
 
@@ -52,16 +60,18 @@ export function Navbar() {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex-shrink-0 p-10">
+          <div className="flex-shrink-0 px-2 md:p-10">
             <Link
               href="/"
+              onClick={() => start("nav")}
+              onMouseDown={() => start("nav")}
               className="flex items-center text-2xl font-extrabold tracking-tight hover:opacity-90 transition-opacity"
             >
               <Image 
                 src="/logo_hor.png" 
                 alt="KnotX logo" 
-                width={120} 
-                height={20} 
+                width={150} 
+                height={50} 
                 priority 
                 className="bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent"
               />
@@ -75,6 +85,8 @@ export function Navbar() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={() => start("nav")}
+                  onMouseDown={() => start("nav")}
                   className="px-3 py-2 text-sm font-medium rounded-md text-emerald-100 hover:text-white hover:bg-emerald-800/60 transition-all duration-200 flex items-center gap-2"
                 >
                   <item.icon className="h-4 w-4" />
@@ -105,6 +117,7 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link
                       href="/dashboard"
+                      onClick={() => start("nav")}
                       className="flex items-center gap-2 cursor-pointer"
                     >
                       <User className="h-4 w-4" />
@@ -114,6 +127,7 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link
                       href="/subscriptions"
+                      onClick={() => start("nav")}
                       className="flex items-center gap-2 cursor-pointer"
                     >
                       <CreditCard className="h-4 w-4" />
@@ -123,6 +137,7 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link
                       href="/settings"
+                      onClick={() => start("nav")}
                       className="flex items-center gap-2 cursor-pointer"
                     >
                       Settings
@@ -131,15 +146,25 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-2 w-full text-left"
+                      disabled={isLoggingOut}
+                      className="flex items-center gap-2 w-full text-left disabled:opacity-70"
                     >
-                      Sign Out
+                      {isLoggingOut ? (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          Signing out...
+                        </span>
+                      ) : (
+                        <>Sign Out</>
+                      )}
                     </button>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link href="/login">
+              <Link href="/login" onClick={() => start("nav")}
+                onMouseDown={() => start("nav")}
+              >
                 <Button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md px-4 py-2 rounded-md transition-colors">
                   <LogIn className="h-4 w-4" />
                   Login
@@ -176,7 +201,7 @@ export function Navbar() {
                     key={item.name}
                     href={item.href}
                     className="hover:bg-emerald-800/60 px-3 py-2 rounded-md text-base font-medium flex items-center gap-2 text-emerald-100 transition-all"
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => { setIsOpen(false); start("nav"); }}
                   >
                     <Icon className="h-4 w-4" />
                     {item.name}
@@ -225,7 +250,7 @@ export function Navbar() {
                   <Link
                     href="/login"
                     className="hover:bg-emerald-800/60 px-3 py-2 rounded-md text-base flex items-center gap-2 text-emerald-100"
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => { setIsOpen(false); start('nav'); }}
                   >
                     <LogIn className="h-4 w-4" />
                     Login
