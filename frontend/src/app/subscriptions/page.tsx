@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,6 @@ export default function SubscriptionsPage() {
   const [loadingSeriesDetails, setLoadingSeriesDetails] = useState(false);
 
   const router = useRouter();
-  const { user } = useAuth();
   const { subscriptions, loading: loadingSubscriptions, error: subscriptionError, initialized } =
     useSubscription();
   const { papers, testSeries, loading: loadingContent, error: contentError } = useContent();

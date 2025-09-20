@@ -148,16 +148,15 @@ export default function Home() {
                 </p>
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
                   <Link href="/explore">
-                    <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-4 text-base rounded-lg shadow-md">
+                    <Button className="w-full cursor-pointer bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-4 text-base rounded-lg shadow-md">
                       Explore Courses
                     </Button>
                   </Link>
 
-                  {/* <-- changed: added onClick to scroll to pricing --> */}
                   <Button
                     variant="outline"
                     onClick={scrollToPricing}
-                    className="border-emerald-500 text-emerald-500 hover:bg-emerald-500/10 font-medium px-6 py-4 text-base rounded-lg"
+                    className="cursor-pointer border-emerald-500 text-emerald-500 hover:bg-emerald-500/10 font-medium px-6 py-4 text-base rounded-lg"
                   >
                     View Pricing
                   </Button>
@@ -170,7 +169,7 @@ export default function Home() {
               <img
                 src="herocover.png"
                 alt="Learning illustration"
-                className="w-full max-w-sm md:max-w-md lg:max-w-lg h-auto object-cover rounded-xl "
+                className="w-full max-w-sm md:max-w-md lg:max-w-lg h-auto object-cover transition-transform duration-300 hover:scale-110"
               />
             </div>
           </div>
@@ -226,7 +225,7 @@ export default function Home() {
       </section>
 
       {/* Pricing - added id="pricing" so we can scroll to it */}
-      <section id="pricing" className="container mx-auto px-20 py-20">
+      <section id="pricing" className="container mx-auto px-10 md:px-20 py-20">
         <div className="flex flex-col lg:flex-row justify-between items-end gap-6 mb-12">
           <div>
             <h2 className="text-3xl md:text-4xl font-bold mb-2">Our Pricing</h2>
@@ -252,9 +251,8 @@ export default function Home() {
                   className="flex items-center gap-3 p-3 border border-border rounded-md"
                 >
                   <div
-                    className={`p-2 rounded-md ${
-                      f.included ? "bg-emerald-500" : "border border-gray-600"
-                    }`}
+                    className={`p-2 rounded-md ${f.included ? "bg-emerald-500" : "border border-gray-600"
+                      }`}
                   >
                     {f.included ? (
                       <Check className="w-4 h-4 text-white" />
@@ -289,9 +287,8 @@ export default function Home() {
                   className="flex items-center gap-3 p-3 border border-border rounded-md"
                 >
                   <div
-                    className={`p-2 rounded-md ${
-                      f.included ? "bg-emerald-500" : "border border-gray-600"
-                    }`}
+                    className={`p-2 rounded-md ${f.included ? "bg-emerald-500" : "border border-gray-600"
+                      }`}
                   >
                     {f.included ? (
                       <Check className="w-4 h-4 text-white" />
@@ -325,9 +322,8 @@ export default function Home() {
                   className="flex items-center gap-3 p-3 border border-border rounded-md"
                 >
                   <div
-                    className={`p-2 rounded-md ${
-                      f.included ? "bg-emerald-500" : "border border-gray-600"
-                    }`}
+                    className={`p-2 rounded-md ${f.included ? "bg-emerald-500" : "border border-gray-600"
+                      }`}
                   >
                     {f.included ? (
                       <Check className="w-4 h-4 text-white" />
@@ -348,7 +344,7 @@ export default function Home() {
       </section>
 
       {/* FAQ */}
-      <section className="container mx-auto px-4 py-20">
+      <section className="container mx-auto px-10 md:px-20 py-20">
         <h2 className="text-3xl md:text-4xl font-bold mb-8">
           Frequently Asked Questions
         </h2>
