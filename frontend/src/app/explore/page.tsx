@@ -11,7 +11,9 @@ import { useAttempts } from "@/hooks/useAttempts";
 import { useRouter } from "next/navigation";
 import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import apiClient from "@/lib/api";
-import { Search, X, Filter, SortAsc, SortDesc, BookOpen, Layers, Lock, CrownIcon } from "lucide-react";
+import { Search, X, BookOpen, Layers, Lock, CrownIcon } from "lucide-react";
+import SortSelect from "@/components/SortSelect";
+import CategorySelect from "@/components/CategorySelect";
 import { useAuth } from "@/contexts/AuthContext";
 
 // -------------------------
@@ -304,39 +306,13 @@ export default function ExplorePage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap justify-center gap-4">
-          <div className="flex items-center bg-card text-card-foreground shadow-sm rounded px-3">
-            <Filter className="w-4 h-10 mr-2 text-gray-400" />
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-transparent focus:bg-emerald-800 text-gray-200 focus:outline-none"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c} className="bg-card text-card-foreground shadow-sm">
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center bg-card text-card-foreground shadow-sm rounded px-3">
-            {sortBy === "priceLow" || sortBy === "priceHigh" ? (
-              <SortAsc className="w-4 h-4 mr-2 text-gray-400" />
-            ) : (
-              <SortDesc className="w-4 h-4 mr-2 text-gray-400" />
-            )}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="bg-card text-card-foreground shadow-sm focus:outline-none"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="priceLow">Price: Low to High</option>
-              <option value="priceHigh">Price: High to Low</option>
-            </select>
-          </div>
+        <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 max-w-3xl mx-auto w-full">
+          <CategorySelect
+            value={categoryFilter}
+            onChange={(v) => setCategoryFilter(v)}
+            options={categories}
+          />
+          <SortSelect value={sortBy} onChange={(v) => setSortBy(v)} />
         </div>
 
         {/* Content Grid */}
@@ -363,7 +339,16 @@ export default function ExplorePage() {
                   <Button
                     className="bg-emerald-600 hover:bg-emerald-700"
                     disabled={navigatingId === item._id}
-                    onClick={() => (isPaper ? handleItemClick(item, activeTab, hasAccess) : handleExpandSeries(item._id))}
+                    onClick={() => {
+                      if (isPaper) {
+                        return handleItemClick(item, activeTab, hasAccess);
+                      }
+                      // For test series, avoid fetching private details if user doesn't have access
+                      if (hasAccess) {
+                        return handleExpandSeries(item._id);
+                      }
+                      return handleItemClick(item, activeTab, hasAccess);
+                    }}
                   >
                     {navigatingId === item._id
                       ? "Loading..."
