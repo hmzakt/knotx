@@ -17,7 +17,7 @@ import { app } from "./app.js"
 
 connectDB()
     .then(() => {
-        app.listen(process.env.PORT, () => {
+        app.listen(process.env.PORT || 4000, () => {
             console.log(`Server is started at port ${process.env.PORT}`)
         })
     })
