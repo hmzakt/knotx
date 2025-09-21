@@ -17,6 +17,7 @@ import {
 
 import BeamsBackground from "@/components/kokonutui/beams-background";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import { BookOpenCheck, FileText, Users, BarChart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -175,10 +176,14 @@ export default function Home() {
 
             {/* Right image */}
             <div className="w-full md:w-1/2 flex justify-center md:justify-end">
-              <img
-                src="herocover.png"
+              <Image
+                src="/herocover.png"
                 alt="Learning illustration"
-                className="w-full max-w-sm md:max-w-md lg:max-w-lg h-auto object-cover transition-transform duration-300 hover:scale-110"
+                className="w-full h-auto object-cover transition-transform duration-300 hover:scale-110"
+                width={800}
+                height={600}
+                sizes="(max-width: 768px) 90vw, (max-width: 1024px) 50vw, 600px"
+                priority
               />
             </div>
           </div>

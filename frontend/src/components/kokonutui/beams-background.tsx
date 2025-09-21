@@ -62,7 +62,9 @@ export default function BeamsBackground({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const beamsRef = useRef<Beam[]>([]);
   const animationFrameRef = useRef<number>(0);
+  // Default number of beams for desktop; mobile will scale this down.
   const MINIMUM_BEAMS = 20;
+  const runningRef = useRef<boolean>(true);
 
   const opacityMap = {
     subtle: 0.7,
@@ -77,22 +79,36 @@ export default function BeamsBackground({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const isMobile = () => typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
+    const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const updateCanvasSize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
+      // Lower DPR on mobile to reduce fill-rate cost
+      const dprCap = isMobile() ? 1 : 1.5;
+      const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
       canvas.style.width = `${window.innerWidth}px`;
       canvas.style.height = `${window.innerHeight}px`;
+      // Reset transform before applying new scale to avoid accumulation across resizes
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
 
-      const totalBeams = MINIMUM_BEAMS * 1.5;
+      // Reduce beam count on mobile
+      const baseBeams = isMobile() ? Math.ceil(MINIMUM_BEAMS * 0.4) : MINIMUM_BEAMS;
+      const totalBeams = Math.max(8, Math.floor(baseBeams * 1.2));
       beamsRef.current = Array.from({ length: totalBeams }, () =>
         createBeam(canvas.width, canvas.height)
       );
     };
 
     updateCanvasSize();
-    window.addEventListener("resize", updateCanvasSize);
+    let resizeRaf = 0;
+    const onResize = () => {
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(updateCanvasSize);
+    };
+    window.addEventListener("resize", onResize);
 
     function resetBeam(beam: Beam, index: number, totalBeams: number) {
       if (!canvas) return beam;
@@ -143,11 +159,29 @@ export default function BeamsBackground({
       ctx.restore();
     }
 
+    // Cap FPS especially on mobile devices to reduce jank
+    const targetFPS = prefersReducedMotion() ? 20 : (isMobile() ? 30 : 60);
+    const frameInterval = 1000 / targetFPS;
+    let lastTime = performance.now();
+
     function animate() {
       if (!canvas || !ctx) return;
+      if (!runningRef.current) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      const now = performance.now();
+      const delta = now - lastTime;
+      if (delta < frameInterval) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      lastTime = now - (delta % frameInterval);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.filter = "blur(35px)";
+      // Lower blur to reduce GPU cost; canvas pixels are already softened by gradients
+      ctx.filter = "blur(18px)";
 
       const totalBeams = beamsRef.current.length;
       beamsRef.current.forEach((beam, index) => {
@@ -166,8 +200,15 @@ export default function BeamsBackground({
 
     animate();
 
+    // Pause animation when tab not visible to save battery/CPU
+    const onVisibility = () => {
+      runningRef.current = document.visibilityState === "visible";
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
-      window.removeEventListener("resize", updateCanvasSize);
+  window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", onVisibility);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -181,25 +222,12 @@ export default function BeamsBackground({
         className
       )}
     >
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0"
-        style={{ filter: "blur(15px)" }}
-      />
+      <canvas ref={canvasRef} className="absolute inset-0" />
 
       <motion.div
-        className="absolute inset-0 bg-black/20"
-        animate={{
-          opacity: [0.05, 0.15, 0.05],
-        }}
-        transition={{
-          duration: 10,
-          ease: "easeInOut",
-          repeat: Number.POSITIVE_INFINITY,
-        }}
-        style={{
-          backdropFilter: "blur(50px)",
-        }}
+        className="absolute inset-0 bg-black/30"
+        animate={{ opacity: [0.08, 0.16, 0.08] }}
+        transition={{ duration: 10, ease: "easeInOut", repeat: Number.POSITIVE_INFINITY }}
       />
 
       {/* Hero or children content */}
