@@ -11,13 +11,25 @@ import { app } from "./app.js"
 
 
 
-const PORT = process.env.PORT || 4000;
+const getValidPort = () => {
+    const raw = process.env.PORT;
+    // Treat empty string or non-numeric as invalid
+    const parsed = Number(raw);
+    if (!raw || Number.isNaN(parsed) || parsed < 0 || parsed > 65535) {
+        const fallback = 8000;
+        console.warn(`Invalid PORT env '${raw ?? ''}'. Falling back to ${fallback}.`);
+        return fallback;
+    }
+    return parsed;
+};
+
+const PORT = getValidPort();
 
 connectDB()
   .then(() => {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server started and connected to DB!`);
-      console.log(`Listening on port: ${PORT}`);
+    app.listen(PORT, () => {
+        console.log(`Server started and connected to DB!`);
+        console.log(`Listening on port: ${PORT}`);
     });
   })
   .catch((err) => {
