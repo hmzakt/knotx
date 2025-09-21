@@ -19,53 +19,53 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-// ✅ Enhanced SEO metadata
+
 export const metadata: Metadata = {
   title: {
-    default: "SkillBridge - Learn Design & Development Online",
-    template: "%s | SkillBridge",
+    default: "KnotX",
+    template: "%s | KnotX",
   },
   description:
-    "Unlock your creative potential with SkillBridge. Learn design and development from industry experts with flexible, up-to-date online courses.",
+    "Unlock your creative potential with KnotX. Practise with and upgrade yourself.",
   keywords: [
     "online courses",
-    "design learning",
-    "web development tutorials",
-    "learn coding",
-    "UI/UX training",
+    "test series",
+    "dgca tutorials",
+    "dgca",
+    "preparation",
+    "flight",
+    "online preparation",
+    "learn",
+    "fly",
+    "dgca practise"
   ],
-  authors: [{ name: "SkillBridge" }],
-  creator: "SkillBridge Team",
+  authors: [{ name: "KnotX" }],
+  creator: "Md Hamza Akhtar",
   openGraph: {
-    title: "SkillBridge - Learn Design & Development Online",
+    title: "KnotX - Your flight companion",
     description:
-      "Learn from industry experts and enhance your skills with practical projects, flexible schedules, and updated curriculum.",
+      "Learn from industry experts and enhance your skills with properly structures papers, test series and updated curriculum.",
     url: "https://your-domain.com",
-    siteName: "SkillBridge",
-    images: [
-      {
-        url: "https://your-domain.com/og-image.png", // ✅ replace with your OG image
-        width: 1200,
-        height: 630,
-        alt: "SkillBridge - Online Learning",
-      },
-    ],
-    locale: "en_US",
+    siteName: "knotX",
+    // images: [
+    //   {
+    //     url: "https://your-domain.com/og-image.png", 
+    //     width: 1200,
+    //     height: 630,
+    //     alt: "SkillBridge - Online Learning",
+    //   },
+    // ],
+    locale: "en_IN",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SkillBridge - Learn Design & Development Online",
+    title: "KnotX - Your friendly flight instruction",
     description:
-      "Learn design and development online from industry experts. Flexible, practical, and updated courses.",
-    images: ["https://your-domain.com/og-image.png"], // ✅ replace with your image
-    creator: "@your_twitter_handle", // ✅ update if available
+      "Learn from industry experts and enhance your skills with properly structures papers, test series and updated curriculum.",
+    // images: ["https://your-domain.com/og-image.png"], // ✅ replace with your image
+    creator: "@hmz_akt", //
   },
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
-  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
