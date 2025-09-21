@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import apiClient from '../lib/api';
+import { getToken } from '../lib/auth';
 
 interface Attempt {
   _id: string;
@@ -56,6 +57,13 @@ export const useAttempts = (): UseAttemptsReturn => {
   };
 
   useEffect(() => {
+    // Avoid calling protected endpoint when logged out
+    const token = getToken();
+    if (!token) {
+      setLoading(false);
+      setAttempts([]);
+      return;
+    }
     fetchAttempts();
   }, []);
 

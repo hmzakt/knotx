@@ -47,12 +47,15 @@ apiClient.interceptors.response.use(
     (response)=>response, 
     (error) =>{
         if(error.response?.status == 401){
-            // With cookie-based auth, simply redirect without touching storage
-            if (typeof window !== 'undefined' && 
-                !window.location.pathname.includes('/login') && 
-                !window.location.pathname.includes('/register') &&
-                window.location.pathname !== '/') {
-                window.location.href = '/login';
+            // Only redirect to login if a token exists (expired/invalid session),
+            // not for anonymous users on public pages.
+            if (typeof window !== 'undefined') {
+                const hasToken = Boolean(localStorage.getItem('token'));
+                const path = window.location.pathname;
+                const isAuthPage = path.includes('/login') || path.includes('/register');
+                if (hasToken && !isAuthPage && path !== '/') {
+                    window.location.href = '/login';
+                }
             }
         }
         return Promise.reject(error);
