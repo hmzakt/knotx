@@ -11,20 +11,18 @@ import { app } from "./app.js"
 
 
 
-// app.listen(process.env.PORT || 8000, () => {
-//     console.log(`Server is started at port ${process.env.PORT}`)
-// })
+const PORT = process.env.PORT || 4000;
 
 connectDB()
-    .then(() => {
-        app.listen(process.env.PORT || 4000, () => {
-            console.log(`Server is started at port ${process.env.PORT}`)
-        })
-    })
-    .catch((err) => {
-        console.log("dbConnection error \n", err)
-    })
-
+  .then(() => {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server started and connected to DB!`);
+      console.log(`Listening on port: ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("DB connection error:\n", err);
+  });
 
 
 
