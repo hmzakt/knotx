@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useRef } from 'react';
+import React, { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import apiClient from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ interface StartAttemptResponse {
   questions: Question[];
 }
 
-export default function AttemptPaperPage() {
+function AttemptPaperPageInner() {
   const router = useRouter();
   const { start } = useRouteLoading();
   const searchParams = useSearchParams();
@@ -525,5 +525,13 @@ export default function AttemptPaperPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AttemptPaperPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><LoadingSpinner size="lg" /></div>}>
+      <AttemptPaperPageInner />
+    </Suspense>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -42,7 +42,7 @@ type AttemptListItem = {
   durationSec?: number;
 };
 
-export default function AttemptReviewPage() {
+function AttemptReviewPageInner() {
   const searchParams = useSearchParams();
   const attemptId = searchParams.get('attemptId') || undefined;
   const router = useRouter();
@@ -540,5 +540,13 @@ export default function AttemptReviewPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AttemptReviewPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><LoadingSpinner size="lg" /></div>}>
+      <AttemptReviewPageInner />
+    </Suspense>
   );
 }
