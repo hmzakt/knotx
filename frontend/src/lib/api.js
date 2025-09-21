@@ -9,7 +9,20 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
     (config) => {
-        // Prefer HTTP-only Secure cookies; avoid injecting Authorization header
+        // Include bearer token when present (supports cases where cookies are not sent)
+        try {
+            if (typeof window !== 'undefined') {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    config.headers = config.headers || {};
+                    if (!config.headers.Authorization) {
+                        config.headers.Authorization = `Bearer ${token}`;
+                    }
+                }
+            }
+        } catch {}
+
+        // Prefer HTTP-only Secure cookies as primary; above bearer is a fallback.
         // Guard against mixed content in production
         if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
             const base = (config.baseURL || '').toString();

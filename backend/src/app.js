@@ -9,12 +9,28 @@ import compression from "compression"
 
 const app = express()
 
+// Behind Render/Proxies, trust the first proxy for correct protocol/headers
+app.set('trust proxy', 1);
+
 // app.use(cors())
 app.use(helmet());
+
+// Allow multiple origins via comma-separated CORS_ORIGIN; default to localhost for dev
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000' || "https://knotx-tau.vercel.app",
+    origin: function (origin, callback) {
+        // Allow same-origin requests or non-browser requests with no Origin header
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error(`CORS: Origin ${origin} not allowed`));
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }))
 app.use(compression());
 
