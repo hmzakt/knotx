@@ -65,9 +65,9 @@ export default function Dashboard() {
   // Main UI
   // -------------------------
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-black-850 text-white">
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 py-12 shadow-lg">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald py-12 shadow-lg">
         <div className="container mx-auto px-4">
           <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
           <p className="text-emerald-100">
@@ -79,28 +79,28 @@ export default function Dashboard() {
       <div className="container mx-auto px-4 py-10 space-y-10">
         {/* Quick Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow hover:border-emerald-500 transition">
+          <div className="bg-card text-card-foreground shadow-sm p-6 rounded-xl border border-gray-800 hover:border-emerald-500 transition">
             <Crown className="w-8 h-8 text-yellow-400 mb-2" />
             <h3 className="text-xl font-bold">
               {subscriptions?.subscriptions?.allAccess?.length || 0}
             </h3>
             <p className="text-gray-400">All-Access Plans</p>
           </div>
-          <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow hover:border-emerald-500 transition">
+          <div className="bg-card text-card-foreground p-6 rounded-xl border border-gray-800 shadow hover:border-emerald-500 transition">
             <FileText className="w-8 h-8 text-blue-400 mb-2" />
             <h3 className="text-xl font-bold">
               {subscriptions?.subscriptions?.singlePapers?.length || 0}
             </h3>
             <p className="text-gray-400">Individual Papers</p>
           </div>
-          <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow hover:border-emerald-500 transition">
+          <div className="bg-card text-card-foreground  p-6 rounded-xl border border-gray-800 shadow hover:border-emerald-500 transition">
             <Layers className="w-8 h-8 text-purple-400 mb-2" />
             <h3 className="text-xl font-bold">
               {subscriptions?.subscriptions?.testSeries?.length || 0}
             </h3>
             <p className="text-gray-400">Test Series</p>
           </div>
-          <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow hover:border-emerald-500 transition">
+          <div className="bg-card text-card-foreground p-6 rounded-xl border border-gray-800 shadow hover:border-emerald-500 transition">
             {subscriptions?.hasAnySubscription ? (
               <CheckCircle2 className="w-8 h-8 text-green-400 mb-2" />
             ) : (
@@ -114,7 +114,7 @@ export default function Dashboard() {
         </div>
 
         {/* Account Info */}
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 shadow-lg">
+        <div className="bg-card text-card-foreground rounded-xl p-6 border border-gray-800 shadow-lg">
           <h2 className="text-2xl font-semibold mb-6">Account Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex items-center space-x-3">
@@ -161,7 +161,7 @@ export default function Dashboard() {
           <>
             {/* All Access */}
             {subscriptions?.subscriptions?.allAccess?.length > 0 && (
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 shadow-lg">
+              <div className="bg-card text-card-foreground rounded-xl p-6 border border-gray-800 shadow-lg">
                 <h2 className="text-2xl font-semibold mb-4 flex items-center">
                   <Crown className="w-5 h-5 text-yellow-400 mr-2" />
                   All Access
@@ -170,7 +170,7 @@ export default function Dashboard() {
                   {subscriptions.subscriptions.allAccess.map((subscription: any) => (
                     <div
                       key={subscription._id}
-                      className="p-4 bg-gray-800 rounded-lg flex justify-between items-center"
+                      className="p-4 bg-black rounded-lg flex justify-between items-center"
                     >
                       <div>
                         <p className="font-medium text-green-400">All Access Plan</p>
@@ -189,7 +189,7 @@ export default function Dashboard() {
 
             {/* Single Papers */}
             {subscriptions?.subscriptions?.singlePapers?.length > 0 && (
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 shadow-lg">
+              <div className="bg-card text-card-foreground rounded-xl p-6 border border-gray-800 shadow-lg">
                 <h2 className="text-2xl font-semibold mb-4 flex items-center">
                   <FileText className="w-5 h-5 text-blue-400 mr-2" />
                   Individual Papers
@@ -200,7 +200,7 @@ export default function Dashboard() {
                     return (
                       <div
                         key={subscription._id}
-                        className="p-4 bg-gray-800 rounded-lg flex justify-between items-center"
+                        className="p-4 bg-black rounded-lg flex justify-between items-center"
                       >
                         <div>
                           <p className="font-medium">{paper?.title || "Paper"}</p>
@@ -222,7 +222,7 @@ export default function Dashboard() {
 
             {/* Test Series */}
             {subscriptions?.subscriptions?.testSeries?.length > 0 && (
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 shadow-lg">
+              <div className="bg-card text-card-foreground rounded-xl p-6 border border-gray-800 shadow-lg">
                 <h2 className="text-2xl font-semibold mb-4 flex items-center">
                   <Layers className="w-5 h-5 text-purple-400 mr-2" />
                   Test Series
@@ -233,7 +233,7 @@ export default function Dashboard() {
                     return (
                       <div
                         key={subscription._id}
-                        className="p-4 bg-gray-800 rounded-lg flex justify-between items-center"
+                        className="p-4 bg-black rounded-lg flex justify-between items-center"
                       >
                         <div>
                           <p className="font-medium">
@@ -259,7 +259,7 @@ export default function Dashboard() {
           </>
         ) : (
           // No Subscription
-          <div className="bg-gray-900 rounded-xl p-10 border border-gray-800 text-center shadow-lg">
+          <div className="bg-card text-card-foreground  rounded-xl p-10 border border-gray-800 text-center shadow-lg">
             <XCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
             <h3 className="text-2xl font-semibold mb-2">No Active Subscriptions</h3>
             <p className="text-gray-400 mb-6">

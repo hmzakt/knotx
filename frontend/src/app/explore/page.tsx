@@ -229,7 +229,7 @@ export default function ExplorePage() {
   // Main Page
   // ----------------------------------
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-100">
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-emerald-700 to-emerald-900 text-white py-16 px-4 relative overflow-hidden rounded-b-3xl">
         <div className="max-w-4xl mx-auto text-center">
@@ -265,7 +265,7 @@ export default function ExplorePage() {
             placeholder="Search papers or test series..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-10 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 text-gray-100"
+            className="w-full px-10 py-3 bg-card shadow-sm rounded-lg focus:ring-2 focus:ring-emerald-500 text-gray-100"
           />
           {searchQuery && (
             <button
@@ -284,7 +284,7 @@ export default function ExplorePage() {
             className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
               activeTab === "papers"
                 ? "bg-emerald-600 text-white scale-105 shadow-lg"
-                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                : "bg-card text-card-foreground shadow-sm hover:bg-gray-700"
             }`}
           >
             <BookOpen className="w-4 h-4 inline mr-2" />
@@ -295,7 +295,7 @@ export default function ExplorePage() {
             className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
               activeTab === "test-series"
                 ? "bg-emerald-600 text-white scale-105 shadow-lg"
-                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                : "bg-card text-card-foreground shadow-sm hover:bg-gray-700"
             }`}
           >
             <Layers className="w-4 h-4 inline mr-2" />
@@ -305,22 +305,22 @@ export default function ExplorePage() {
 
         {/* Filters */}
         <div className="flex flex-wrap justify-center gap-4">
-          <div className="flex items-center bg-gray-900 border border-gray-700 rounded px-3">
-            <Filter className="w-4 h-4 mr-2 text-gray-400" />
+          <div className="flex items-center bg-card text-card-foreground shadow-sm rounded px-3">
+            <Filter className="w-4 h-10 mr-2 text-gray-400" />
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-transparent text-gray-200 focus:outline-none"
+              className="bg-transparent focus:bg-emerald-800 text-gray-200 focus:outline-none"
             >
               <option value="all">All Categories</option>
               {categories.map((c) => (
-                <option key={c} value={c} className="bg-gray-900">
+                <option key={c} value={c} className="bg-card text-card-foreground shadow-sm">
                   {c}
                 </option>
               ))}
             </select>
           </div>
-          <div className="flex items-center bg-gray-900 border border-gray-700 rounded px-3">
+          <div className="flex items-center bg-card text-card-foreground shadow-sm rounded px-3">
             {sortBy === "priceLow" || sortBy === "priceHigh" ? (
               <SortAsc className="w-4 h-4 mr-2 text-gray-400" />
             ) : (
@@ -329,7 +329,7 @@ export default function ExplorePage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="bg-transparent text-gray-200 focus:outline-none"
+              className="bg-card text-card-foreground shadow-sm focus:outline-none"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
@@ -349,7 +349,7 @@ export default function ExplorePage() {
             return (
               <div
                 key={item._id}
-                className="bg-gray-900 rounded-xl shadow p-6 border border-gray-700 hover:border-emerald-500 hover:scale-[1.02] transition-all duration-300"
+                className="bg-card text-card-foreground shadow-sm rounded-xl p-6 border border-gray-700 hover:border-emerald-500 hover:scale-[1.02] transition-all duration-300"
               >
                 <h3 className="text-lg font-semibold text-white">{item.title}</h3>
                 <p className="text-sm text-gray-400 mb-3">
