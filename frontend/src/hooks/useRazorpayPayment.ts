@@ -137,7 +137,7 @@ export const useRazorpayPayment = (): UseRazorpayPaymentReturn => {
           name: data.itemName || 'User',
         },
         theme: {
-          color: '#3B82F6'
+          color: '#059669' // emerald-600
         },
         modal: {
           ondismiss: () => {

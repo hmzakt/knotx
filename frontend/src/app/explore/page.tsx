@@ -11,7 +11,7 @@ import { useAttempts } from "@/hooks/useAttempts";
 import { useRouter } from "next/navigation";
 import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import apiClient from "@/lib/api";
-import { Search, X, BookOpen, Layers, Lock, CrownIcon } from "lucide-react";
+import { Search, X, BookOpen, Layers, Lock, CrownIcon, Eye, EyeOff, ShoppingCart } from "lucide-react";
 import SortSelect from "@/components/SortSelect";
 import CategorySelect from "@/components/CategorySelect";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +59,39 @@ export default function ExplorePage() {
   const [expandedSeries, setExpandedSeries] = useState<string | null>(null);
   const [testSeriesWithPapers, setTestSeriesWithPapers] = useState<TestSeries[]>([]);
   const [loadingSeriesDetails, setLoadingSeriesDetails] = useState(false);
+
+  // Build payment data for modal (always provide paise values)
+  const buildPaymentData = (args: {
+    type: TabType | 'all-access';
+    item?: Paper | TestSeries;
+  }) => {
+    if (args.type === 'all-access') {
+      const allAccessAmountPaise = Number(process.env.NEXT_PUBLIC_ALL_ACCESS_PRICE_PAISE || 99900);
+      return {
+        type: 'all-access' as const,
+        itemName: 'KnotX Pro — All Access',
+        itemDescription: 'Unlimited access to all papers and test series',
+        baseAmount: allAccessAmountPaise,
+        currency: 'INR',
+        durationDays: 30,
+      };
+    }
+
+    const isPaper = args.type === 'papers';
+    const item = args.item!;
+    const rupees = (item as any).price ?? 0;
+    const amountPaise = Math.max(Math.round(rupees * 100), 100);
+
+    return {
+      type: (isPaper ? 'single-paper' : 'test-series') as 'single-paper' | 'test-series',
+      itemId: item._id,
+      itemName: item.title,
+      itemDescription: isPaper ? (item as Paper).subject : (item as TestSeries).description || 'Test Series',
+      baseAmount: amountPaise,
+      currency: 'INR',
+      durationDays: 30,
+    };
+  };
 
   // ------------------------------
   // Helper functions
@@ -172,7 +205,7 @@ export default function ExplorePage() {
 
   const handleItemClick = (item: Paper | TestSeries, type: TabType, hasAccess: boolean) => {
     if (!hasAccess) {
-      setPaymentModal({ isOpen: true, data: { type, item } });
+      setPaymentModal({ isOpen: true, data: buildPaymentData({ type, item }) });
       return;
     }
     if (type === "papers") {
@@ -247,7 +280,7 @@ export default function ExplorePage() {
           ) : (
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 px-8 py-3 text-lg"
-              onClick={() => setPaymentModal({ isOpen: true, data: { type: "all-access" } })}
+              onClick={() => setPaymentModal({ isOpen: true, data: buildPaymentData({ type: 'all-access' }) })}
             >
              <CrownIcon/> Get Pro
             </Button>
@@ -350,13 +383,27 @@ export default function ExplorePage() {
                       return handleItemClick(item, activeTab, hasAccess);
                     }}
                   >
-                    {navigatingId === item._id
-                      ? "Loading..."
-                      : isPaper
-                        ? "View"
-                        : expandedSeries === item._id
-                          ? "Hide Papers"
-                          : "View Papers"}
+                    {navigatingId === item._id ? (
+                      "Loading..."
+                    ) : isPaper ? (
+                      hasAccess ? (
+                        <span className="inline-flex items-center">
+                          <Eye className="w-4 h-4 mr-2" /> View
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center">
+                          <ShoppingCart className="w-4 h-4 mr-2" /> Buy
+                        </span>
+                      )
+                    ) : expandedSeries === item._id ? (
+                      <span className="inline-flex items-center">
+                        <EyeOff className="w-4 h-4 mr-2" /> Hide Papers
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center">
+                        <Eye className="w-4 h-4 mr-2" /> View Papers
+                      </span>
+                    )}
                   </Button>
                 </div>
               </div>
