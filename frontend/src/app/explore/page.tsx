@@ -376,7 +376,7 @@ export default function ExplorePage() {
                       if (isPaper) {
                         return handleItemClick(item, activeTab, hasAccess);
                       }
-                      // For test series, avoid fetching private details if user doesn't have access
+                      // For test series, check if user has access
                       if (hasAccess) {
                         return handleExpandSeries(item._id);
                       }
@@ -395,17 +395,81 @@ export default function ExplorePage() {
                           <ShoppingCart className="w-4 h-4 mr-2" /> Buy
                         </span>
                       )
-                    ) : expandedSeries === item._id ? (
-                      <span className="inline-flex items-center">
-                        <EyeOff className="w-4 h-4 mr-2" /> Hide Papers
-                      </span>
+                    ) : hasAccess ? (
+                      expandedSeries === item._id ? (
+                        <span className="inline-flex items-center">
+                          <EyeOff className="w-4 h-4 mr-2" /> Hide Series
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center">
+                          <Eye className="w-4 h-4 mr-2" /> View Series
+                        </span>
+                      )
                     ) : (
                       <span className="inline-flex items-center">
-                        <Eye className="w-4 h-4 mr-2" /> View Papers
+                        <ShoppingCart className="w-4 h-4 mr-2" /> Buy
                       </span>
                     )}
                   </Button>
                 </div>
+
+                {/* Accordion for Papers in Test Series (only show if user has access and series is expanded) */}
+                {!isPaper && hasAccess && expandedSeries === item._id && (
+                  <div className="mt-6 space-y-3">
+                    {loadingSeriesDetails ? (
+                      <div className="flex justify-center py-4">
+                        <LoadingSpinner size="sm" />
+                      </div>
+                    ) : (() => {
+                        const seriesDetails = testSeriesWithPapers.find((s) => s._id === item._id);
+                        return seriesDetails?.papers?.length ? (
+                          seriesDetails.papers.map((paper) => {
+                            const paperAttemptStatus = getAttemptStatus(paper._id);
+                            const paperAttempt = getAttemptForPaper(paper._id);
+                            return (
+                              <div
+                                key={paper._id}
+                                className="bg-card text-card-foreground shadow-sm rounded-lg p-4 border border-gray-600 hover:border-emerald-500 transition-all"
+                              >
+                                <h4 className="text-base font-semibold text-white mb-1">
+                                  {paper.title}
+                                </h4>
+                                <p className="text-gray-400 text-sm mb-3">
+                                  Subject: {paper.subject}
+                                </p>
+                                <Button
+                                  onClick={() => {
+                                    start("nav");
+                                    setNavigatingId(paper._id);
+                                    if (paperAttemptStatus.status === "not-attempted") {
+                                      router.push(`/subscriptions/attempts/attempt-paper?paperId=${paper._id}`);
+                                    } else if (paperAttemptStatus.status === "in-progress") {
+                                      router.push(`/subscriptions/attempts/attempt-paper?attemptId=${paperAttempt?._id}`);
+                                    } else {
+                                      router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${paperAttempt?._id}`);
+                                    }
+                                  }}
+                                  disabled={navigatingId === paper._id}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white w-full text-sm py-2"
+                                >
+                                  {navigatingId === paper._id
+                                    ? "Loading..."
+                                    : paperAttemptStatus.status === "not-attempted"
+                                    ? "Start"
+                                    : paperAttemptStatus.status === "in-progress"
+                                    ? "Resume"
+                                    : "View Results"}
+                                </Button>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <p className="text-gray-500 text-center text-sm py-4">No papers in this series.</p>
+                        );
+                      })()
+                    }
+                  </div>
+                )}
               </div>
             );
           })}
