@@ -17,6 +17,9 @@ interface RegisterFormData {
 
 export default function Register() {
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>();
+  // Use a dedicated registration object for the email field so we can call
+  // react-hook-form's onChange and also update local emailValue state.
+  const emailRegister = register("email", { required: "Email is required" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -190,8 +193,13 @@ export default function Register() {
           <div>
             <div className="flex space-x-2">
               <input
-                {...register("email", { required: "Email is required" })}
-                onChange={(e) => setEmailValue(e.target.value)}
+                {...emailRegister}
+                onChange={(e) => {
+                  // keep react-hook-form in sync
+                  if (typeof emailRegister.onChange === "function") emailRegister.onChange(e as any);
+                  // also keep local state for OTP flow
+                  setEmailValue(e.target.value);
+                }}
                 type="email"
                 placeholder="Email address"
                 className="flex-1 px-3 py-2 border border-gray-600 rounded-md 
