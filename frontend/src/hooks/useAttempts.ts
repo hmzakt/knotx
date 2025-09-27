@@ -68,7 +68,20 @@ export const useAttempts = (): UseAttemptsReturn => {
   }, []);
 
   const getAttemptForPaper = (paperId: string): Attempt | undefined => {
-    return attempts.find(attempt => attempt.paperId === paperId);
+    // There may be multiple attempts for the same paper (reattempts).
+    // Prefer an in-progress attempt if present, otherwise return the most
+    // recent attempt (submitted or otherwise). This ensures UI that wants
+    // to resume an in-progress attempt finds the correct one.
+    const list = attempts.filter(attempt => String(attempt.paperId) === String(paperId));
+    if (!list.length) return undefined;
+    const inProgress = list.find(a => a.status === 'in-progress');
+    if (inProgress) return inProgress;
+    // pick newest by submittedAt > startedAt > createdAt
+    return list.sort((a, b) => {
+      const aTime = new Date(a.submittedAt || a.startedAt || a.createdAt).getTime();
+      const bTime = new Date(b.submittedAt || b.startedAt || b.createdAt).getTime();
+      return bTime - aTime;
+    })[0];
   };
 
   const getAttemptStatus = (paperId: string) => {

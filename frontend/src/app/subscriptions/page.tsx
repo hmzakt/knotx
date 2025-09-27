@@ -62,6 +62,9 @@ export default function SubscriptionsPage() {
   const { attempts, loading: loadingAttempts, getAttemptStatus, getAttemptForPaper } =
     useAttempts();
 
+  // Map paperId -> conflict info (attemptId, message)
+  const [startConflicts, setStartConflicts] = useState<Record<string, { attemptId?: string; message?: string }>>({});
+
   const fetchTestSeriesWithPapers = async (seriesId: string) => {
     try {
       setLoadingSeriesDetails(true);
@@ -146,6 +149,43 @@ export default function SubscriptionsPage() {
 
   const filteredPapers = getFilteredPapers();
   const filteredTestSeries = getFilteredTestSeries();
+
+  const fmtSec = (s: number) => {
+    if (!s || s <= 0) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  };
+
+  const handleStartAttemptInline = async (paperId: string) => {
+    start('nav');
+    setNavigatingId(paperId);
+    try {
+      const res = await apiClient.post(`/attempts/start/${paperId}`);
+      const data = res.data;
+      const payload = data?.data ?? data;
+      const attemptId = payload.attemptId || payload._id || payload.id;
+      if (attemptId) {
+        // navigate to attempt by id to avoid another start call
+        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attemptId}`);
+        return;
+      }
+      // If server didn't return attemptId, fall back to opening by paperId
+      router.push(`/subscriptions/attempts/attempt-paper?paperId=${paperId}`);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const respData = err?.response?.data;
+      if (status === 409) {
+        const attemptIdFromResp = respData?.data?.attemptId || respData?.attemptId || respData?.existingAttemptId || respData?.data?.id;
+        setStartConflicts(prev => ({ ...prev, [paperId]: { attemptId: attemptIdFromResp, message: respData?.message } }));
+      } else {
+        console.error('Failed to start attempt', err);
+        alert(err?.response?.data?.message || err?.message || 'Failed to start attempt');
+      }
+    } finally {
+      setNavigatingId(null);
+    }
+  };
 
   if (loadingSubscriptions || !initialized || loadingContent || loadingAttempts) {
     return (
@@ -282,34 +322,60 @@ export default function SubscriptionsPage() {
                     <div className="text-emerald-400 font-bold text-2xl mb-4">
                       {formatPrice(paper.price)}
                     </div>
-                    <Button
-                      onClick={() => {
-                        start("nav");
-                        setNavigatingId(paper._id);
-                        const attemptForPaper = getAttemptForPaper(paper._id);
-                        if (attemptStatus.status === "not-attempted") {
-                          router.push(`/subscriptions/attempts/attempt-paper?paperId=${paper._id}`);
-                        } else if (attemptStatus.status === "in-progress") {
-                          router.push(
-                            `/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`
-                          );
-                        } else {
-                          router.push(
-                            `/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`
-                          );
-                        }
-                      }}
-                      disabled={navigatingId === paper._id}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
-                    >
-                      {navigatingId === paper._id
-                        ? "Loading..."
-                        : attemptStatus.status === "not-attempted"
-                        ? "Start"
-                        : attemptStatus.status === "in-progress"
-                        ? "Resume"
-                        : "View Results"}
-                    </Button>
+                    <div>
+                      <Button
+                        onClick={() => {
+                          const attemptForPaper = getAttemptForPaper(paper._id);
+                          if (attemptStatus.status === 'not-attempted') {
+                            return handleStartAttemptInline(paper._id);
+                          }
+                          start('nav');
+                          setNavigatingId(paper._id);
+                          if (attemptStatus.status === 'in-progress') {
+                            router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`);
+                          } else {
+                            router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`);
+                          }
+                        }}
+                        disabled={navigatingId === paper._id}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                      >
+                        {navigatingId === paper._id
+                          ? 'Loading...'
+                          : attemptStatus.status === 'not-attempted'
+                          ? 'Start'
+                          : attemptStatus.status === 'in-progress'
+                          ? 'Resume'
+                          : 'View Results'}
+                      </Button>
+
+                      {/* Inline conflict banner for this paper (shown if start returned 409) */}
+                      {startConflicts[paper._id] && (
+                        <div className="mt-3 p-3 rounded-lg bg-yellow-100 text-yellow-800 text-sm">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold">An attempt is already in progress</div>
+                              <div>
+                                {startConflicts[paper._id].message || 'You cannot start a new attempt right now.'}
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {startConflicts[paper._id].attemptId && (
+                                <Button
+                                  onClick={() => router.push(`/subscriptions/attempts/attempt-paper?attemptId=${startConflicts[paper._id].attemptId}`)}
+                                  className="bg-emerald-600 text-white"
+                                >
+                                  Resume
+                                </Button>
+                              )}
+                              <Button variant="outline" onClick={() => setStartConflicts(prev => { const copy = { ...prev }; delete copy[paper._id]; return copy; })}>
+                                Dismiss
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -357,36 +423,59 @@ export default function SubscriptionsPage() {
                                 <p className="text-gray-400 text-sm mb-3">
                                   Subject: {paper.subject}
                                 </p>
-                                <Button
-                                  onClick={() => {
-                                    start("nav");
-                                    setNavigatingId(paper._id);
-                                    const attemptForPaper = getAttemptForPaper(paper._id);
-                                    if (attemptStatus.status === "not-attempted") {
-                                      router.push(
-                                        `/subscriptions/attempts/attempt-paper?paperId=${paper._id}`
-                                      );
-                                    } else if (attemptStatus.status === "in-progress") {
-                                      router.push(
-                                        `/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`
-                                      );
-                                    } else {
-                                      router.push(
-                                        `/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`
-                                      );
-                                    }
-                                  }}
-                                  disabled={navigatingId === paper._id}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
-                                >
-                                  {navigatingId === paper._id
-                                    ? "Loading..."
-                                    : attemptStatus.status === "not-attempted"
-                                    ? "Start"
-                                    : attemptStatus.status === "in-progress"
-                                    ? "Resume"
-                                    : "View Results"}
-                                </Button>
+                                <div>
+                                  <Button
+                                    onClick={() => {
+                                      const attemptForPaper = getAttemptForPaper(paper._id);
+                                      if (attemptStatus.status === 'not-attempted') {
+                                        return handleStartAttemptInline(paper._id);
+                                      }
+                                      start('nav');
+                                      setNavigatingId(paper._id);
+                                      if (attemptStatus.status === 'in-progress') {
+                                        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`);
+                                      } else {
+                                        router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`);
+                                      }
+                                    }}
+                                    disabled={navigatingId === paper._id}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                                  >
+                                    {navigatingId === paper._id
+                                      ? 'Loading...'
+                                      : attemptStatus.status === 'not-attempted'
+                                      ? 'Start'
+                                      : attemptStatus.status === 'in-progress'
+                                      ? 'Resume'
+                                      : 'View Results'}
+                                  </Button>
+
+                                  {startConflicts[paper._id] && (
+                                    <div className="mt-3 p-3 rounded-lg bg-yellow-100 text-yellow-800 text-sm">
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          <div className="font-semibold">An attempt is already in progress</div>
+                                          <div>
+                                            {startConflicts[paper._id].message || 'You cannot start a new attempt right now.'}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          {startConflicts[paper._id].attemptId && (
+                                            <Button
+                                              onClick={() => router.push(`/subscriptions/attempts/attempt-paper?attemptId=${startConflicts[paper._id].attemptId}`)}
+                                              className="bg-emerald-600 text-white"
+                                            >
+                                              Resume
+                                            </Button>
+                                          )}
+                                          <Button variant="outline" onClick={() => setStartConflicts(prev => { const copy = { ...prev }; delete copy[paper._id]; return copy; })}>
+                                            Dismiss
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             );
                           })

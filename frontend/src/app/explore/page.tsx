@@ -48,6 +48,43 @@ export default function ExplorePage() {
   const { papers, testSeries, loading: loadingContent, error: contentError } = useContent();
   const { getAttemptForPaper, getAttemptStatus } = useAttempts();
 
+  const [startConflicts, setStartConflicts] = useState<Record<string, { attemptId?: string; message?: string }>>({});
+
+  const fmtSec = (s: number) => {
+    if (!s || s <= 0) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  };
+
+  const handleStartAttemptInline = async (paperId: string) => {
+    start('nav');
+    setNavigatingId(paperId);
+    try {
+      const res = await apiClient.post(`/attempts/start/${paperId}`);
+      const data = res.data;
+      const payload = data?.data ?? data;
+      const attemptId = payload.attemptId || payload._id || payload.id;
+      if (attemptId) {
+        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attemptId}`);
+        return;
+      }
+      router.push(`/subscriptions/attempts/attempt-paper?paperId=${paperId}`);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const respData = err?.response?.data;
+      if (status === 409) {
+        const attemptIdFromResp = respData?.data?.attemptId || respData?.attemptId || respData?.existingAttemptId || respData?.data?.id;
+        setStartConflicts(prev => ({ ...prev, [paperId]: { attemptId: attemptIdFromResp, message: respData?.message } }));
+      } else {
+        console.error('Failed to start attempt', err);
+        alert(err?.response?.data?.message || err?.message || 'Failed to start attempt');
+      }
+    } finally {
+      setNavigatingId(null);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<TabType>("papers");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -278,12 +315,12 @@ export default function ExplorePage() {
           {subscriptions?.hasAllAccess ? (
             <span className="text-emerald-400 text-xl font-semibold">Pro Subscribed - You can access all our contact</span>
           ) : (
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700 px-8 py-3 text-lg"
-              onClick={() => setPaymentModal({ isOpen: true, data: buildPaymentData({ type: 'all-access' }) })}
-            >
-             <CrownIcon/> Get Pro
-            </Button>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 px-8 py-3 text-lg"
+                    onClick={() => setPaymentModal({ isOpen: true, data: buildPaymentData({ type: 'all-access' }) })}
+                  >
+                   <CrownIcon/> Get Pro
+                  </Button>
           )}
         </div>
         <div className="absolute -right-32 -bottom-32 w-96 h-96 rounded-full bg-emerald-800 opacity-20 blur-3xl"></div>
@@ -374,6 +411,9 @@ export default function ExplorePage() {
                     disabled={navigatingId === item._id}
                     onClick={() => {
                       if (isPaper) {
+                        // Use inline start for papers so we can show 409 conflicts inline
+                        const status = getAttemptStatus((item as Paper)._id);
+                        if (status.status === 'not-attempted') return handleStartAttemptInline((item as Paper)._id);
                         return handleItemClick(item, activeTab, hasAccess);
                       }
                       // For test series, check if user has access
@@ -411,6 +451,33 @@ export default function ExplorePage() {
                       </span>
                     )}
                   </Button>
+
+                  {/* Inline conflict banner for this paper if start returned 409 */}
+                  {startConflicts[item._id] && (
+                    <div className="mt-3 p-3 rounded-lg bg-yellow-100 text-yellow-800 text-sm">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">An attempt is already in progress</div>
+                          <div>
+                            {startConflicts[item._id].message || 'You cannot start a new attempt right now.'}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {startConflicts[item._id].attemptId && (
+                            <Button
+                              onClick={() => router.push(`/subscriptions/attempts/attempt-paper?attemptId=${startConflicts[item._id].attemptId}`)}
+                              className="bg-emerald-600 text-white"
+                            >
+                              Resume
+                            </Button>
+                          )}
+                          <Button variant="outline" onClick={() => setStartConflicts(prev => { const copy = { ...prev }; delete copy[item._id]; return copy; })}>
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Accordion for Papers in Test Series (only show if user has access and series is expanded) */}
