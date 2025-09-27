@@ -48,6 +48,43 @@ export default function ExplorePage() {
   const { papers, testSeries, loading: loadingContent, error: contentError } = useContent();
   const { getAttemptForPaper, getAttemptStatus } = useAttempts();
 
+  const [startConflicts, setStartConflicts] = useState<Record<string, { attemptId?: string; message?: string }>>({});
+
+  const fmtSec = (s: number) => {
+    if (!s || s <= 0) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  };
+
+  const handleStartAttemptInline = async (paperId: string) => {
+    start('nav');
+    setNavigatingId(paperId);
+    try {
+      const res = await apiClient.post(`/attempts/start/${paperId}`);
+      const data = res.data;
+      const payload = data?.data ?? data;
+      const attemptId = payload.attemptId || payload._id || payload.id;
+      if (attemptId) {
+        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attemptId}`);
+        return;
+      }
+      router.push(`/subscriptions/attempts/attempt-paper?paperId=${paperId}`);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const respData = err?.response?.data;
+      if (status === 409) {
+        const attemptIdFromResp = respData?.data?.attemptId || respData?.attemptId || respData?.existingAttemptId || respData?.data?.id;
+        setStartConflicts(prev => ({ ...prev, [paperId]: { attemptId: attemptIdFromResp, message: respData?.message } }));
+      } else {
+        console.error('Failed to start attempt', err);
+        alert(err?.response?.data?.message || err?.message || 'Failed to start attempt');
+      }
+    } finally {
+      setNavigatingId(null);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<TabType>("papers");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -56,6 +93,11 @@ export default function ExplorePage() {
     isOpen: false,
     data: null,
   });
+  const [rulesDialog, setRulesDialog] = useState<{ isOpen: boolean; paperId: string | null }>({
+    isOpen: false,
+    paperId: null,
+  });
+  const [rulesAccepted, setRulesAccepted] = useState(false);
   const [expandedSeries, setExpandedSeries] = useState<string | null>(null);
   const [testSeriesWithPapers, setTestSeriesWithPapers] = useState<TestSeries[]>([]);
   const [loadingSeriesDetails, setLoadingSeriesDetails] = useState(false);
@@ -213,9 +255,11 @@ export default function ExplorePage() {
       const attempt = getAttemptForPaper((item as Paper)._id);
       start("nav");
       setNavigatingId(item._id);
-      if (status.status === "not-attempted")
-        router.push(`/subscriptions/attempts/attempt-paper?paperId=${item._id}`);
-      else if (status.status === "in-progress")
+      if (status.status === "not-attempted") {
+        // Show rules dialog for new attempts
+        setRulesDialog({ isOpen: true, paperId: item._id });
+        setRulesAccepted(false);
+      } else if (status.status === "in-progress")
         router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attempt?._id}`);
       else router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${attempt?._id}`);
     } else {
@@ -223,6 +267,20 @@ export default function ExplorePage() {
       setNavigatingId(item._id);
       router.push(`/subscriptions`);
     }
+  };
+
+  const handleRulesAcceptance = () => {
+    if (rulesAccepted && rulesDialog.paperId) {
+      setRulesDialog({ isOpen: false, paperId: null });
+      router.push(`/subscriptions/attempts/attempt-paper?paperId=${rulesDialog.paperId}`);
+    }
+  };
+
+  const handleRulesDialogClose = () => {
+    setRulesDialog({ isOpen: false, paperId: null });
+    setRulesAccepted(false);
+    setNavigatingId(null);
+    stop();
   };
 
   // ----------------------------------
@@ -278,12 +336,12 @@ export default function ExplorePage() {
           {subscriptions?.hasAllAccess ? (
             <span className="text-emerald-400 text-xl font-semibold">Pro Subscribed - You can access all our contact</span>
           ) : (
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700 px-8 py-3 text-lg"
-              onClick={() => setPaymentModal({ isOpen: true, data: buildPaymentData({ type: 'all-access' }) })}
-            >
-             <CrownIcon/> Get Pro
-            </Button>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 px-8 py-3 text-lg"
+                    onClick={() => setPaymentModal({ isOpen: true, data: buildPaymentData({ type: 'all-access' }) })}
+                  >
+                   <CrownIcon/> Get Pro
+                  </Button>
           )}
         </div>
         <div className="absolute -right-32 -bottom-32 w-96 h-96 rounded-full bg-emerald-800 opacity-20 blur-3xl"></div>
@@ -374,9 +432,12 @@ export default function ExplorePage() {
                     disabled={navigatingId === item._id}
                     onClick={() => {
                       if (isPaper) {
+                        // Use inline start for papers so we can show 409 conflicts inline
+                        const status = getAttemptStatus((item as Paper)._id);
+                        if (status.status === 'not-attempted') return handleStartAttemptInline((item as Paper)._id);
                         return handleItemClick(item, activeTab, hasAccess);
                       }
-                      // For test series, avoid fetching private details if user doesn't have access
+                      // For test series, check if user has access
                       if (hasAccess) {
                         return handleExpandSeries(item._id);
                       }
@@ -395,17 +456,108 @@ export default function ExplorePage() {
                           <ShoppingCart className="w-4 h-4 mr-2" /> Buy
                         </span>
                       )
-                    ) : expandedSeries === item._id ? (
-                      <span className="inline-flex items-center">
-                        <EyeOff className="w-4 h-4 mr-2" /> Hide Papers
-                      </span>
+                    ) : hasAccess ? (
+                      expandedSeries === item._id ? (
+                        <span className="inline-flex items-center">
+                          <EyeOff className="w-4 h-4 mr-2" /> Hide Series
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center">
+                          <Eye className="w-4 h-4 mr-2" /> View Series
+                        </span>
+                      )
                     ) : (
                       <span className="inline-flex items-center">
-                        <Eye className="w-4 h-4 mr-2" /> View Papers
+                        <ShoppingCart className="w-4 h-4 mr-2" /> Buy
                       </span>
                     )}
                   </Button>
+
+                  {/* Inline conflict banner for this paper if start returned 409 */}
+                  {startConflicts[item._id] && (
+                    <div className="mt-3 p-3 rounded-lg bg-yellow-100 text-yellow-800 text-sm">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">An attempt is already in progress</div>
+                          <div>
+                            {startConflicts[item._id].message || 'You cannot start a new attempt right now.'}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {startConflicts[item._id].attemptId && (
+                            <Button
+                              onClick={() => router.push(`/subscriptions/attempts/attempt-paper?attemptId=${startConflicts[item._id].attemptId}`)}
+                              className="bg-emerald-600 text-white"
+                            >
+                              Resume
+                            </Button>
+                          )}
+                          <Button variant="outline" onClick={() => setStartConflicts(prev => { const copy = { ...prev }; delete copy[item._id]; return copy; })}>
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {/* Accordion for Papers in Test Series (only show if user has access and series is expanded) */}
+                {!isPaper && hasAccess && expandedSeries === item._id && (
+                  <div className="mt-6 space-y-3">
+                    {loadingSeriesDetails ? (
+                      <div className="flex justify-center py-4">
+                        <LoadingSpinner size="sm" />
+                      </div>
+                    ) : (() => {
+                        const seriesDetails = testSeriesWithPapers.find((s) => s._id === item._id);
+                        return seriesDetails?.papers?.length ? (
+                          seriesDetails.papers.map((paper) => {
+                            const paperAttemptStatus = getAttemptStatus(paper._id);
+                            const paperAttempt = getAttemptForPaper(paper._id);
+                            return (
+                              <div
+                                key={paper._id}
+                                className="bg-card text-card-foreground shadow-sm rounded-lg p-4 border border-gray-600 hover:border-emerald-500 transition-all"
+                              >
+                                <h4 className="text-base font-semibold text-white mb-1">
+                                  {paper.title}
+                                </h4>
+                                <p className="text-gray-400 text-sm mb-3">
+                                  Subject: {paper.subject}
+                                </p>
+                                <Button
+                                  onClick={() => {
+                                    start("nav");
+                                    setNavigatingId(paper._id);
+                                    if (paperAttemptStatus.status === "not-attempted") {
+                                      router.push(`/subscriptions/attempts/attempt-paper?paperId=${paper._id}`);
+                                    } else if (paperAttemptStatus.status === "in-progress") {
+                                      router.push(`/subscriptions/attempts/attempt-paper?attemptId=${paperAttempt?._id}`);
+                                    } else {
+                                      router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${paperAttempt?._id}`);
+                                    }
+                                  }}
+                                  disabled={navigatingId === paper._id}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white w-full text-sm py-2"
+                                >
+                                  {navigatingId === paper._id
+                                    ? "Loading..."
+                                    : paperAttemptStatus.status === "not-attempted"
+                                    ? "Start"
+                                    : paperAttemptStatus.status === "in-progress"
+                                    ? "Resume"
+                                    : "View Results"}
+                                </Button>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <p className="text-gray-500 text-center text-sm py-4">No papers in this series.</p>
+                        );
+                      })()
+                    }
+                  </div>
+                )}
               </div>
             );
           })}
@@ -419,6 +571,60 @@ export default function ExplorePage() {
           onClose={() => setPaymentModal({ isOpen: false, data: null })}
           paymentData={paymentModal.data}
         />
+      )}
+
+      {/* Rules Dialog */}
+      {rulesDialog.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Test Rules & Guidelines</h2>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-700 text-sm">You get +1 score for correct answers, 0 for wrong answers</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-700 text-sm">You can start only one attempt at a time</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-700 text-sm">You cannot start another attempt without submitting this attempt</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-700 text-sm">Be fair and avoid cheating so that everyone gets a fair platform</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 mb-6">
+              <input
+                type="checkbox"
+                id="rulesAccepted"
+                checked={rulesAccepted}
+                onChange={(e) => setRulesAccepted(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="rulesAccepted" className="text-sm text-gray-700">
+                I have read and agree to follow these rules
+              </label>
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleRulesDialogClose}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRulesAcceptance}
+                disabled={!rulesAccepted}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

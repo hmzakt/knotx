@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../contexts/AuthContext";
 import { SubscriptionProvider } from "../contexts/SubscriptionContext";
+import { ThemeProvider } from "../contexts/ThemeContext";
 import { Navbar } from "@/components/navbar";
 import { RouteLoadingProvider } from "@/contexts/RouteLoadingContext";
 import RouteLoadingOverlay from "@/components/RouteLoadingOverlay";
@@ -74,19 +75,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" dir="ltr">
+    <html lang="en" dir="ltr">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <AuthProvider>
-          <SubscriptionProvider>
-            <RouteLoadingProvider>
-              <RouteLoadingOverlay />
-              <Navbar />
-              {children}
-            </RouteLoadingProvider>
-          </SubscriptionProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <SubscriptionProvider>
+              <RouteLoadingProvider>
+                <RouteLoadingOverlay />
+                <Navbar />
+                {children}
+              </RouteLoadingProvider>
+            </SubscriptionProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

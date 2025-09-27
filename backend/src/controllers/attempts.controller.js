@@ -194,13 +194,29 @@ export const submitAttempt = async (req, res) =>{
         if(attempt.userId.toString()!==userId.toString()) return res.status(403).json(new ApiError(403, "Not owner"));
         if(attempt.status !== "in-progress") return res.status(400).json(new ApiError(400, "No ongoing attempt found"));
 
-        const marksPerQ = Number(attempt.meta?.marksPerQ ?? 1);
-        const negative = Number(attempt.meta?.negativeMark ?? 0);
+    const marksPerQ = Number(attempt.meta?.marksPerQ ?? 1);
+    const negative = Number(attempt.meta?.negativeMark ?? 0);
 
-        const answerMap = {};
-        attempt.answers.forEach( a=> {
-            answerMap[a.questionId.toHexString()] = (typeof a.selectedIndex === "number")?a.selectedIndex : null;
-        });
+    // If the client sent answers in the submit payload (e.g., user pressed Submit without
+    // saving each answer), prefer/merge those answers so they are included in scoring.
+    try {
+      const incoming = req.body?.answers;
+      if (Array.isArray(incoming) && incoming.length > 0) {
+        // Normalize incoming answers into attempt.answers shape
+        attempt.answers = incoming.map(item => ({
+          questionId: item.questionId,
+          selectedIndex: (item.selectedIndex === null || item.selectedIndex === undefined) ? null : Number(item.selectedIndex),
+          answeredAt: new Date()
+        }));
+      }
+    } catch (e) {
+      console.warn('Failed to merge incoming answers into attempt:', e);
+    }
+
+    const answerMap = {};
+    attempt.answers.forEach( a=> {
+      answerMap[a.questionId.toHexString()] = (typeof a.selectedIndex === "number")?a.selectedIndex : null;
+    });
 
         let score = 0;
         const breakdown = [];
@@ -368,6 +384,74 @@ export const listMyAttempts = async (req, res) => {
     return res.status(200).json(new ApiResponse(200, attempts, "User attempts fetched"));
   } catch (err) {
     console.error("listMyAttempts error:", err);
+    return res.status(500).json(new ApiError(500, "Server error", err));
+  }
+};
+
+/**
+ * GET DETAILED REVIEW
+ * - Endpoint: GET /api/v1/attempts/:attemptId/detailed-review
+ * - Returns detailed review with explanations and correct answers
+ * - Only available for submitted attempts
+ */
+export const getDetailedReview = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { attemptId } = req.params;
+
+    if (!mongoose.isValidObjectId(attemptId)) {
+      return res.status(400).json(new ApiError(400, "Invalid attemptId"));
+    }
+
+    const attempt = await Attempt.findById(attemptId).lean();
+    if (!attempt) return res.status(404).json(new ApiError(404, "Attempt not found"));
+
+    // Ownership or admin allowed to fetch
+    if (attempt.userId.toString() !== userId.toString() && req.user.role !== "admin") {
+      return res.status(403).json(new ApiError(403, "Not attempt owner"));
+    }
+
+    // Only allow detailed review for submitted attempts
+    if (attempt.status !== "submitted") {
+      return res.status(400).json(new ApiError(400, "Detailed review only available for submitted attempts"));
+    }
+
+    // Get paper information
+    const paper = await Paper.findById(attempt.paperId).select("title subject").lean();
+
+    // Create detailed question breakdown with explanations
+    const questionSnapshot = attempt.questionSnapshot.map(q => {
+      const answer = attempt.answers.find(a => a.questionId.toString() === q.questionId.toString());
+      
+      return {
+        questionId: q.questionId,
+        text: q.text,
+        options: q.options.map((opt, idx) => ({
+          index: idx,
+          optionText: opt.optionText
+        })),
+        correctIndex: q.correctIndex,
+        selectedIndex: answer ? answer.selectedIndex : null,
+        explanation: q.explanation || null,
+        difficulty: q.difficulty || null,
+        domain: q.domain || null
+      };
+    });
+
+    return res.status(200).json(new ApiResponse(200, {
+      attemptId: attempt._id,
+      paperId: attempt.paperId,
+      paperTitle: paper?.title || "Unknown Paper",
+      subject: paper?.subject || "Unknown Subject",
+      score: attempt.score,
+      totalQuestions: attempt.totalQuestions,
+      submittedAt: attempt.submittedAt,
+      durationSec: attempt.durationSec,
+      questionSnapshot,
+      answers: attempt.answers
+    }, "Detailed review fetched"));
+  } catch (err) {
+    console.error("getDetailedReview error:", err);
     return res.status(500).json(new ApiError(500, "Server error", err));
   }
 };

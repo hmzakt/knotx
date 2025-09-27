@@ -62,6 +62,16 @@ export default function SubscriptionsPage() {
   const { attempts, loading: loadingAttempts, getAttemptStatus, getAttemptForPaper } =
     useAttempts();
 
+  // Map paperId -> conflict info (attemptId, message)
+  const [startConflicts, setStartConflicts] = useState<Record<string, { attemptId?: string; message?: string }>>({});
+  
+  // Rules dialog state
+  const [rulesDialog, setRulesDialog] = useState<{ isOpen: boolean; paperId: string | null }>({
+    isOpen: false,
+    paperId: null,
+  });
+  const [rulesAccepted, setRulesAccepted] = useState(false);
+
   const fetchTestSeriesWithPapers = async (seriesId: string) => {
     try {
       setLoadingSeriesDetails(true);
@@ -146,6 +156,65 @@ export default function SubscriptionsPage() {
 
   const filteredPapers = getFilteredPapers();
   const filteredTestSeries = getFilteredTestSeries();
+
+  const fmtSec = (s: number) => {
+    if (!s || s <= 0) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  };
+
+  const handleStartAttemptInline = async (paperId: string) => {
+    // Check if this is a new attempt
+    const status = getAttemptStatus(paperId);
+    if (status.status === "not-attempted") {
+      // Show rules dialog for new attempts
+      setRulesDialog({ isOpen: true, paperId });
+      setRulesAccepted(false);
+      return;
+    }
+    
+    start('nav');
+    setNavigatingId(paperId);
+    try {
+      const res = await apiClient.post(`/attempts/start/${paperId}`);
+      const data = res.data;
+      const payload = data?.data ?? data;
+      const attemptId = payload.attemptId || payload._id || payload.id;
+      if (attemptId) {
+        // navigate to attempt by id to avoid another start call
+        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attemptId}`);
+        return;
+      }
+      // If server didn't return attemptId, fall back to opening by paperId
+      router.push(`/subscriptions/attempts/attempt-paper?paperId=${paperId}`);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const respData = err?.response?.data;
+      if (status === 409) {
+        const attemptIdFromResp = respData?.data?.attemptId || respData?.attemptId || respData?.existingAttemptId || respData?.data?.id;
+        setStartConflicts(prev => ({ ...prev, [paperId]: { attemptId: attemptIdFromResp, message: respData?.message } }));
+      } else {
+        console.error('Failed to start attempt', err);
+        alert(err?.response?.data?.message || err?.message || 'Failed to start attempt');
+      }
+    } finally {
+      setNavigatingId(null);
+    }
+  };
+
+  const handleRulesAcceptance = async () => {
+    if (rulesAccepted && rulesDialog.paperId) {
+      setRulesDialog({ isOpen: false, paperId: null });
+      // Start the attempt after rules acceptance
+      await handleStartAttemptInline(rulesDialog.paperId);
+    }
+  };
+
+  const handleRulesDialogClose = () => {
+    setRulesDialog({ isOpen: false, paperId: null });
+    setRulesAccepted(false);
+  };
 
   if (loadingSubscriptions || !initialized || loadingContent || loadingAttempts) {
     return (
@@ -282,34 +351,60 @@ export default function SubscriptionsPage() {
                     <div className="text-emerald-400 font-bold text-2xl mb-4">
                       {formatPrice(paper.price)}
                     </div>
-                    <Button
-                      onClick={() => {
-                        start("nav");
-                        setNavigatingId(paper._id);
-                        const attemptForPaper = getAttemptForPaper(paper._id);
-                        if (attemptStatus.status === "not-attempted") {
-                          router.push(`/subscriptions/attempts/attempt-paper?paperId=${paper._id}`);
-                        } else if (attemptStatus.status === "in-progress") {
-                          router.push(
-                            `/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`
-                          );
-                        } else {
-                          router.push(
-                            `/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`
-                          );
-                        }
-                      }}
-                      disabled={navigatingId === paper._id}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
-                    >
-                      {navigatingId === paper._id
-                        ? "Loading..."
-                        : attemptStatus.status === "not-attempted"
-                        ? "Start"
-                        : attemptStatus.status === "in-progress"
-                        ? "Resume"
-                        : "View Results"}
-                    </Button>
+                    <div>
+                      <Button
+                        onClick={() => {
+                          const attemptForPaper = getAttemptForPaper(paper._id);
+                          if (attemptStatus.status === 'not-attempted') {
+                            return handleStartAttemptInline(paper._id);
+                          }
+                          start('nav');
+                          setNavigatingId(paper._id);
+                          if (attemptStatus.status === 'in-progress') {
+                            router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`);
+                          } else {
+                            router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`);
+                          }
+                        }}
+                        disabled={navigatingId === paper._id}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                      >
+                        {navigatingId === paper._id
+                          ? 'Loading...'
+                          : attemptStatus.status === 'not-attempted'
+                          ? 'Start'
+                          : attemptStatus.status === 'in-progress'
+                          ? 'Resume'
+                          : 'View Results'}
+                      </Button>
+
+                      {/* Inline conflict banner for this paper (shown if start returned 409) */}
+                      {startConflicts[paper._id] && (
+                        <div className="mt-3 p-3 rounded-lg bg-yellow-100 text-yellow-800 text-sm">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold">An attempt is already in progress</div>
+                              <div>
+                                {startConflicts[paper._id].message || 'You cannot start a new attempt right now.'}
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {startConflicts[paper._id].attemptId && (
+                                <Button
+                                  onClick={() => router.push(`/subscriptions/attempts/attempt-paper?attemptId=${startConflicts[paper._id].attemptId}`)}
+                                  className="bg-emerald-600 text-white"
+                                >
+                                  Resume
+                                </Button>
+                              )}
+                              <Button variant="outline" onClick={() => setStartConflicts(prev => { const copy = { ...prev }; delete copy[paper._id]; return copy; })}>
+                                Dismiss
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -357,36 +452,59 @@ export default function SubscriptionsPage() {
                                 <p className="text-gray-400 text-sm mb-3">
                                   Subject: {paper.subject}
                                 </p>
-                                <Button
-                                  onClick={() => {
-                                    start("nav");
-                                    setNavigatingId(paper._id);
-                                    const attemptForPaper = getAttemptForPaper(paper._id);
-                                    if (attemptStatus.status === "not-attempted") {
-                                      router.push(
-                                        `/subscriptions/attempts/attempt-paper?paperId=${paper._id}`
-                                      );
-                                    } else if (attemptStatus.status === "in-progress") {
-                                      router.push(
-                                        `/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`
-                                      );
-                                    } else {
-                                      router.push(
-                                        `/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`
-                                      );
-                                    }
-                                  }}
-                                  disabled={navigatingId === paper._id}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
-                                >
-                                  {navigatingId === paper._id
-                                    ? "Loading..."
-                                    : attemptStatus.status === "not-attempted"
-                                    ? "Start"
-                                    : attemptStatus.status === "in-progress"
-                                    ? "Resume"
-                                    : "View Results"}
-                                </Button>
+                                <div>
+                                  <Button
+                                    onClick={() => {
+                                      const attemptForPaper = getAttemptForPaper(paper._id);
+                                      if (attemptStatus.status === 'not-attempted') {
+                                        return handleStartAttemptInline(paper._id);
+                                      }
+                                      start('nav');
+                                      setNavigatingId(paper._id);
+                                      if (attemptStatus.status === 'in-progress') {
+                                        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attemptForPaper?._id}`);
+                                      } else {
+                                        router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${attemptForPaper?._id}`);
+                                      }
+                                    }}
+                                    disabled={navigatingId === paper._id}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                                  >
+                                    {navigatingId === paper._id
+                                      ? 'Loading...'
+                                      : attemptStatus.status === 'not-attempted'
+                                      ? 'Start'
+                                      : attemptStatus.status === 'in-progress'
+                                      ? 'Resume'
+                                      : 'View Results'}
+                                  </Button>
+
+                                  {startConflicts[paper._id] && (
+                                    <div className="mt-3 p-3 rounded-lg bg-yellow-100 text-yellow-800 text-sm">
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          <div className="font-semibold">An attempt is already in progress</div>
+                                          <div>
+                                            {startConflicts[paper._id].message || 'You cannot start a new attempt right now.'}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          {startConflicts[paper._id].attemptId && (
+                                            <Button
+                                              onClick={() => router.push(`/subscriptions/attempts/attempt-paper?attemptId=${startConflicts[paper._id].attemptId}`)}
+                                              className="bg-emerald-600 text-white"
+                                            >
+                                              Resume
+                                            </Button>
+                                          )}
+                                          <Button variant="outline" onClick={() => setStartConflicts(prev => { const copy = { ...prev }; delete copy[paper._id]; return copy; })}>
+                                            Dismiss
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             );
                           })
@@ -400,6 +518,60 @@ export default function SubscriptionsPage() {
               })}
         </div>
       </div>
+
+      {/* Rules Dialog */}
+      {rulesDialog.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
+            <h2 className="text-xl font-bold text-white mb-4">Test Rules & Guidelines</h2>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-300 text-sm">You get +1 score for correct answers, 0 for wrong answers</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-300 text-sm">You can start only one attempt at a time</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-300 text-sm">You cannot start another attempt without submitting this attempt</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-300 text-sm">Be fair and avoid cheating so that everyone gets a fair platform</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 mb-6">
+              <input
+                type="checkbox"
+                id="rulesAccepted"
+                checked={rulesAccepted}
+                onChange={(e) => setRulesAccepted(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 bg-gray-700 border-gray-600 rounded focus:ring-emerald-500 focus:ring-2"
+              />
+              <label htmlFor="rulesAccepted" className="text-sm text-gray-300">
+                I have read and agree to follow these rules
+              </label>
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleRulesDialogClose}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white border-gray-500"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRulesAcceptance}
+                disabled={!rulesAccepted}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-gray-600 disabled:cursor-not-allowed"
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

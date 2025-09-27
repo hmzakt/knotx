@@ -16,7 +16,13 @@ import {
   Star,
   Zap,
   Brain,
-  BookOpen
+  BookOpen,
+  Clock,
+  Calendar,
+  Eye,
+  EyeOff,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface ReviewBreakdown {
@@ -53,6 +59,7 @@ function AttemptReviewPageInner() {
   const [attemptsLoading, setAttemptsLoading] = useState(false);
   const [latestAttemptId, setLatestAttemptId] = useState<string | null>(null);
   const [showPrevious, setShowPrevious] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     if (!attemptId) return;
@@ -224,14 +231,14 @@ function AttemptReviewPageInner() {
 
   if (!attemptId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <XCircle className="w-8 h-8 text-red-500" />
+          <div className={`w-16 h-16 ${isDarkMode ? 'bg-red-900' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+            <XCircle className={`w-8 h-8 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Attempt Specified</h2>
-          <p className="text-gray-600 mb-6">Please provide a valid attempt ID to view the review.</p>
-          <Button onClick={() => router.push('/subscriptions')} className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white">
+          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>No Attempt Specified</h2>
+          <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>Please provide a valid attempt ID to view the review.</p>
+          <Button onClick={() => router.push('/subscriptions')} className="bg-emerald-600 hover:bg-emerald-700 text-white">
             Back to Subscriptions
           </Button>
         </div>
@@ -241,10 +248,10 @@ function AttemptReviewPageInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600">Loading your results...</p>
+          <p className={`mt-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading your results...</p>
         </div>
       </div>
     );
@@ -252,14 +259,14 @@ function AttemptReviewPageInner() {
 
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <div className="text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <BarChart3 className="w-8 h-8 text-gray-400" />
+          <div className={`w-16 h-16 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+            <BarChart3 className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Data Available</h2>
-          <p className="text-gray-600 mb-6">Unable to load the review data for this attempt.</p>
-          <Button onClick={() => router.push('/subscriptions')} className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white">
+          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>No Data Available</h2>
+          <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>Unable to load the review data for this attempt.</p>
+          <Button onClick={() => router.push('/subscriptions')} className="bg-emerald-600 hover:bg-emerald-700 text-white">
             Back to Subscriptions
           </Button>
         </div>
@@ -274,83 +281,114 @@ function AttemptReviewPageInner() {
   const previousAttempts = attempts.filter(a => a._id !== attemptId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600"></div>
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="relative z-10 py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full mb-6">
-                <Trophy className="w-10 h-10 text-white" />
-              </div>
-              <h1 className="text-5xl font-bold mb-4 text-white drop-shadow-lg">
+      <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b shadow-sm`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={() => router.push('/subscriptions')}
+                variant="outline"
+                className={`flex items-center space-x-2 ${isDarkMode 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Subscriptions</span>
+              </Button>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <Trophy className="w-5 h-5 inline mr-2" />
                 Attempt Review
-              </h1>
-              <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
-                {data.paperTitle || 'Review your performance and track your progress'}
-              </p>
-              {data.subject && (
-                <div className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white font-semibold">
-                  {data.subject}
-                </div>
-              )}
+              </div>
+            </div>
+            
+            {/* Dark Mode Toggle */}
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                variant="outline"
+                size="sm"
+                className={`${isDarkMode 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </Button>
             </div>
           </div>
+          
+          <div className="mt-6 text-center">
+            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+              {data.paperTitle || 'Attempt Review'}
+            </h1>
+            {data.subject && (
+              <div className={`inline-flex items-center px-3 py-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-full text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {data.subject}
+              </div>
+            )}
+          </div>
         </div>
-        
-        {/* Decorative elements */}
-        <div className="absolute top-10 right-10 w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
-        <div className="absolute bottom-10 left-10 w-32 h-32 bg-white/5 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Attempt Context Bar */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-          <div className="text-sm text-gray-700">
-            {isLatest ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-                Showing latest attempt
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
-                Viewing an older attempt
-              </span>
-            )}
-            {data.submittedAt && (
-              <span className="ml-2 text-gray-500">• Submitted {formatDateTime(data.submittedAt)}</span>
-            )}
-          </div>
-          <div className="flex gap-3">
-            {!isLatest && latestAttemptId && (
+        <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6 mb-8`}>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              {isLatest ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                  Showing latest attempt
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
+                  Viewing an older attempt
+                </span>
+              )}
+              {data.submittedAt && (
+                <span className={`ml-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  Submitted {formatDateTime(data.submittedAt)}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-3">
+              {!isLatest && latestAttemptId && (
+                <Button
+                  onClick={() => viewAttempt(latestAttemptId)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Show Latest
+                </Button>
+              )}
               <Button
-                onClick={() => viewAttempt(latestAttemptId)}
-                className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white"
+                variant="outline"
+                onClick={() => setShowPrevious(prev => !prev)}
+                disabled={attemptsLoading || previousAttempts.length === 0}
+                className={`${isDarkMode 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
               >
-                Show Latest
+                {attemptsLoading
+                  ? 'Loading…'
+                  : previousAttempts.length === 0
+                    ? 'No Previous Attempts'
+                    : (showPrevious ? <><EyeOff className="w-4 h-4 mr-2" />Hide Previous</> : <><Eye className="w-4 h-4 mr-2" />View Previous</>)}
               </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => setShowPrevious(prev => !prev)}
-              disabled={attemptsLoading || previousAttempts.length === 0}
-            >
-              {attemptsLoading
-                ? 'Loading…'
-                : previousAttempts.length === 0
-                  ? 'No Last Attempts'
-                  : (showPrevious ? 'Hide Last Attempts' : 'View Last Attempts')}
-            </Button>
+            </div>
           </div>
         </div>
 
         {/* Previous Attempts List */}
         {showPrevious && previousAttempts.length > 0 && (
-          <div className="mb-10 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Previous Attempts</h3>
+          <div className={`mb-10 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6`}>
+            <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Previous Attempts</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {previousAttempts.map(a => {
                 const total = a.totalQuestions ?? data.total;
@@ -359,14 +397,19 @@ function AttemptReviewPageInner() {
                   <button
                     key={a._id}
                     onClick={() => viewAttempt(a._id)}
-                    className="text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-300 hover:shadow transition"
+                    className={`text-left ${isDarkMode ? 'bg-gray-700 border-gray-600 hover:border-emerald-500' : 'bg-gray-50 border-gray-200 hover:border-emerald-300'} border rounded-xl p-4 hover:shadow transition`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm text-gray-500">{formatDateTime(a.submittedAt || a.startedAt)}</div>
-                        <div className="text-lg font-semibold text-gray-900">{a.score}/{total} ({pct}%)</div>
+                        <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          {formatDateTime(a.submittedAt || a.startedAt)}
+                        </div>
+                        <div className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {a.score}/{total} ({pct}%)
+                        </div>
                       </div>
-                      <div className="text-indigo-600 text-sm font-medium">View →</div>
+                      <div className="text-emerald-600 text-sm font-medium">View →</div>
                     </div>
                   </button>
                 );
@@ -379,17 +422,17 @@ function AttemptReviewPageInner() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {/* Main Score Card */}
           <div className="lg:col-span-2">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-8">
+            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-8`}>
               <div className="text-center mb-8">
                 <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full mb-4 ${getScoreBgColor(data.score, data.total)}`}>
                   <span className={`text-4xl font-bold ${getScoreColor(data.score, data.total)}`}>
                     {percentage}%
                   </span>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                <h2 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                   {data.score} out of {data.total}
                 </h2>
-                <p className="text-lg text-gray-600">Questions Answered Correctly</p>
+                <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Questions Answered Correctly</p>
               </div>
               
               <div className="flex items-center justify-center space-x-2 mb-6">
@@ -400,8 +443,8 @@ function AttemptReviewPageInner() {
               </div>
 
               {data.message && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-                  <p className="text-blue-800 font-medium">{data.message}</p>
+                <div className={`${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border rounded-xl p-4 text-center`}>
+                  <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{data.message}</p>
                 </div>
               )}
             </div>
@@ -409,36 +452,36 @@ function AttemptReviewPageInner() {
 
           {/* Stats Cards */}
           <div className="space-y-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6">
+            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Accuracy</h3>
-                <Target className="w-6 h-6 text-indigo-600" />
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Accuracy</h3>
+                <Target className="w-6 h-6 text-emerald-600" />
               </div>
-              <div className="text-3xl font-bold text-indigo-600 mb-2">{percentage}%</div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="text-3xl font-bold text-emerald-600 mb-2">{percentage}%</div>
+              <div className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2`}>
                 <div 
-                  className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-1000"
+                  className="bg-emerald-500 h-2 rounded-full transition-all duration-1000"
                   style={{ width: `${percentage}%` }}
                 ></div>
               </div>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6">
+            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Correct Answers</h3>
-                <CheckCircle className="w-6 h-6 text-green-600" />
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Correct Answers</h3>
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
               </div>
-              <div className="text-3xl font-bold text-green-600 mb-2">{data.score}</div>
-              <p className="text-sm text-gray-600">out of {data.total} total</p>
+              <div className="text-3xl font-bold text-emerald-600 mb-2">{data.score}</div>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>out of {data.total} total</p>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6">
+            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Incorrect</h3>
-                <XCircle className="w-6 h-6 text-red-600" />
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Incorrect</h3>
+                <XCircle className="w-6 h-6 text-red-500" />
               </div>
-              <div className="text-3xl font-bold text-red-600 mb-2">{data.total - data.score}</div>
-              <p className="text-sm text-gray-600">questions to review</p>
+              <div className="text-3xl font-bold text-red-500 mb-2">{data.total - data.score}</div>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>questions to review</p>
             </div>
           </div>
         </div>
@@ -447,27 +490,27 @@ function AttemptReviewPageInner() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Difficulty Breakdown */}
           {data.difficulty && Object.keys(data.difficulty).length > 0 && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-8">
+            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-8`}>
               <div className="flex items-center mb-6">
-                <Brain className="w-6 h-6 text-purple-600 mr-3" />
-                <h3 className="text-2xl font-bold text-gray-900">Difficulty Breakdown</h3>
+                <Brain className="w-6 h-6 text-emerald-600 mr-3" />
+                <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Difficulty Breakdown</h3>
               </div>
               <div className="space-y-4">
                 {Object.entries(data.difficulty).map(([difficulty, stats]) => {
                   const percentage = Math.round((stats.correct / stats.total) * 100);
                   return (
-                    <div key={difficulty} className="p-4 bg-gray-50 rounded-xl">
+                    <div key={difficulty} className={`p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="font-semibold text-gray-900 capitalize">{difficulty}</span>
-                        <span className="text-sm text-gray-600">{stats.correct}/{stats.total}</span>
+                        <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} capitalize`}>{difficulty}</span>
+                        <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{stats.correct}/{stats.total}</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className={`w-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} rounded-full h-2`}>
                         <div 
-                          className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-1000"
+                          className="bg-emerald-500 h-2 rounded-full transition-all duration-1000"
                           style={{ width: `${percentage}%` }}
                         ></div>
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">{percentage}% accuracy</div>
+                      <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mt-1`}>{percentage}% accuracy</div>
                     </div>
                   );
                 })}
@@ -477,27 +520,27 @@ function AttemptReviewPageInner() {
 
           {/* Domain Breakdown */}
           {data.domain && Object.keys(data.domain).length > 0 && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-8">
+            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-8`}>
               <div className="flex items-center mb-6">
-                <BookOpen className="w-6 h-6 text-blue-600 mr-3" />
-                <h3 className="text-2xl font-bold text-gray-900">Domain Breakdown</h3>
+                <BookOpen className="w-6 h-6 text-emerald-600 mr-3" />
+                <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Domain Breakdown</h3>
               </div>
               <div className="space-y-4">
                 {Object.entries(data.domain).map(([domain, stats]) => {
                   const percentage = Math.round((stats.correct / stats.total) * 100);
                   return (
-                    <div key={domain} className="p-4 bg-gray-50 rounded-xl">
+                    <div key={domain} className={`p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="font-semibold text-gray-900 capitalize">{domain}</span>
-                        <span className="text-sm text-gray-600">{stats.correct}/{stats.total}</span>
+                        <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} capitalize`}>{domain}</span>
+                        <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{stats.correct}/{stats.total}</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className={`w-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} rounded-full h-2`}>
                         <div 
-                          className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-1000"
+                          className="bg-emerald-500 h-2 rounded-full transition-all duration-1000"
                           style={{ width: `${percentage}%` }}
                         ></div>
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">{percentage}% accuracy</div>
+                      <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mt-1`}>{percentage}% accuracy</div>
                     </div>
                   );
                 })}
@@ -510,7 +553,11 @@ function AttemptReviewPageInner() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button
             onClick={() => router.push('/subscriptions')}
-            className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
+            variant="outline"
+            className={`font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 ${isDarkMode 
+              ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Back to Subscriptions</span>
@@ -520,19 +567,30 @@ function AttemptReviewPageInner() {
             variant="outline"
             onClick={() => setShowPrevious(prev => !prev)}
             disabled={attemptsLoading || previousAttempts.length === 0}
-            className="px-8 py-4 rounded-xl shadow-sm hover:shadow transform hover:scale-105 transition-all duration-200"
+            className={`px-8 py-4 rounded-xl shadow-sm hover:shadow transform hover:scale-105 transition-all duration-200 ${isDarkMode 
+              ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
           >
             {attemptsLoading
-              ? 'Loading Last Attempts…'
+              ? 'Loading Previous Attempts…'
               : previousAttempts.length === 0
-                ? 'No Last Attempts'
-                : (showPrevious ? 'Hide Last Attempts' : `View Last Attempts (${previousAttempts.length})`)}
+                ? 'No Previous Attempts'
+                : (showPrevious ? <><EyeOff className="w-4 h-4 mr-2" />Hide Previous</> : <><Eye className="w-4 h-4 mr-2" />View Previous ({previousAttempts.length})</>)}
+          </Button>
+
+          <Button
+            onClick={() => router.push(`/subscriptions/attempts/detailed-review?attemptId=${attemptId}`)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
+          >
+            <Eye className="w-5 h-5" />
+            <span>View Detailed Review</span>
           </Button>
 
           <Button
             onClick={handleReattempt}
             disabled={loading}
-            className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
           >
             <RotateCcw className="w-5 h-5" />
             <span>{loading ? 'Starting...' : 'Reattempt Paper'}</span>
