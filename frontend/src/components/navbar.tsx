@@ -19,9 +19,13 @@ import {
   Mail,
   Home,
   LogIn,
+  Moon,
+  Sun,
+  Monitor,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouteLoading } from "@/contexts/RouteLoadingContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import apiClient from "@/lib/api";
 
 export function Navbar() {
@@ -29,6 +33,7 @@ export function Navbar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, logout } = useAuth();
   const { start, stop } = useRouteLoading();
+  const { theme, setTheme, actualTheme } = useTheme();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -52,6 +57,21 @@ export function Navbar() {
     } finally {
       setIsLoggingOut(false);
       stop();
+    }
+  };
+
+  const getThemeIcon = () => {
+    if (theme === 'system') return Monitor;
+    return actualTheme === 'dark' ? Moon : Sun;
+  };
+
+  const cycleTheme = () => {
+    if (theme === 'dark') {
+      setTheme('light');
+    } else if (theme === 'light') {
+      setTheme('system');
+    } else {
+      setTheme('dark');
     }
   };
 
@@ -97,7 +117,21 @@ export function Navbar() {
           </div>
 
           {/* Desktop Account Menu / Login Button */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex items-center gap-2">
+            {/* Theme Toggle Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={cycleTheme}
+              className="flex items-center gap-2 text-emerald-100 hover:bg-emerald-800/60 transition-colors"
+              title={`Current: ${theme === 'system' ? 'System' : theme.charAt(0).toUpperCase() + theme.slice(1)}`}
+            >
+              {(() => {
+                const Icon = getThemeIcon();
+                return <Icon className="h-4 w-4" />;
+              })()}
+            </Button>
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -211,6 +245,18 @@ export function Navbar() {
 
               {/* Mobile Account Section */}
               <div className="border-t border-emerald-800/40 pt-3 mt-3">
+                {/* Mobile Theme Toggle */}
+                <button
+                  onClick={cycleTheme}
+                  className="hover:bg-emerald-800/60 w-full px-3 py-2 rounded-md text-base flex items-center gap-2 text-emerald-100"
+                >
+                  {(() => {
+                    const Icon = getThemeIcon();
+                    return <Icon className="h-4 w-4" />;
+                  })()}
+                  Theme ({theme === 'system' ? 'System' : theme.charAt(0).toUpperCase() + theme.slice(1)})
+                </button>
+
                 {user ? (
                   <>
                     <div className="px-3 py-2 text-sm font-semibold text-emerald-200">

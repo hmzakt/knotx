@@ -64,6 +64,13 @@ export default function SubscriptionsPage() {
 
   // Map paperId -> conflict info (attemptId, message)
   const [startConflicts, setStartConflicts] = useState<Record<string, { attemptId?: string; message?: string }>>({});
+  
+  // Rules dialog state
+  const [rulesDialog, setRulesDialog] = useState<{ isOpen: boolean; paperId: string | null }>({
+    isOpen: false,
+    paperId: null,
+  });
+  const [rulesAccepted, setRulesAccepted] = useState(false);
 
   const fetchTestSeriesWithPapers = async (seriesId: string) => {
     try {
@@ -158,6 +165,15 @@ export default function SubscriptionsPage() {
   };
 
   const handleStartAttemptInline = async (paperId: string) => {
+    // Check if this is a new attempt
+    const status = getAttemptStatus(paperId);
+    if (status.status === "not-attempted") {
+      // Show rules dialog for new attempts
+      setRulesDialog({ isOpen: true, paperId });
+      setRulesAccepted(false);
+      return;
+    }
+    
     start('nav');
     setNavigatingId(paperId);
     try {
@@ -185,6 +201,19 @@ export default function SubscriptionsPage() {
     } finally {
       setNavigatingId(null);
     }
+  };
+
+  const handleRulesAcceptance = async () => {
+    if (rulesAccepted && rulesDialog.paperId) {
+      setRulesDialog({ isOpen: false, paperId: null });
+      // Start the attempt after rules acceptance
+      await handleStartAttemptInline(rulesDialog.paperId);
+    }
+  };
+
+  const handleRulesDialogClose = () => {
+    setRulesDialog({ isOpen: false, paperId: null });
+    setRulesAccepted(false);
   };
 
   if (loadingSubscriptions || !initialized || loadingContent || loadingAttempts) {
@@ -489,6 +518,60 @@ export default function SubscriptionsPage() {
               })}
         </div>
       </div>
+
+      {/* Rules Dialog */}
+      {rulesDialog.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
+            <h2 className="text-xl font-bold text-white mb-4">Test Rules & Guidelines</h2>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-300 text-sm">You get +1 score for correct answers, 0 for wrong answers</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-300 text-sm">You can start only one attempt at a time</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-300 text-sm">You cannot start another attempt without submitting this attempt</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-300 text-sm">Be fair and avoid cheating so that everyone gets a fair platform</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 mb-6">
+              <input
+                type="checkbox"
+                id="rulesAccepted"
+                checked={rulesAccepted}
+                onChange={(e) => setRulesAccepted(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 bg-gray-700 border-gray-600 rounded focus:ring-emerald-500 focus:ring-2"
+              />
+              <label htmlFor="rulesAccepted" className="text-sm text-gray-300">
+                I have read and agree to follow these rules
+              </label>
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleRulesDialogClose}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white border-gray-500"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRulesAcceptance}
+                disabled={!rulesAccepted}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-gray-600 disabled:cursor-not-allowed"
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

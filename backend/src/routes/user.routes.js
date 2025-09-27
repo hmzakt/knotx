@@ -7,7 +7,7 @@ import { changeCurrentPassword,
         refreshAccessToken,
          registerUser,
           updateAccountDetails,
-           updateUserAvatar,
+           updateUserAvatar
           } from "../controllers/user.controller.js"
 import {upload} from "../middlewares/multer.middelware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -34,6 +34,5 @@ router.route("/update-account").patch(verifyJWT, updateAccountDetails)
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"),updateUserAvatar)
 router.route("/current-user").get(verifyJWT, getCurrentUser)
 router.route("/subscriptions").get(verifyJWT, getUserSubscriptions)
-
 
 export default router

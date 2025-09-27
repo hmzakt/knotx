@@ -157,4 +157,14 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Theme transition for smooth switching */
+  * {
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  }
+  
+  /* Ensure navbar adapts to theme changes */
+  nav {
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  }
 }

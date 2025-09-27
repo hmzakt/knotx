@@ -15,9 +15,7 @@ import {
   Moon,
   BookOpen,
   Brain,
-  Target,
   Trophy,
-  Clock,
   Calendar
 } from 'lucide-react';
 

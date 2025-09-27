@@ -93,6 +93,11 @@ export default function ExplorePage() {
     isOpen: false,
     data: null,
   });
+  const [rulesDialog, setRulesDialog] = useState<{ isOpen: boolean; paperId: string | null }>({
+    isOpen: false,
+    paperId: null,
+  });
+  const [rulesAccepted, setRulesAccepted] = useState(false);
   const [expandedSeries, setExpandedSeries] = useState<string | null>(null);
   const [testSeriesWithPapers, setTestSeriesWithPapers] = useState<TestSeries[]>([]);
   const [loadingSeriesDetails, setLoadingSeriesDetails] = useState(false);
@@ -250,9 +255,11 @@ export default function ExplorePage() {
       const attempt = getAttemptForPaper((item as Paper)._id);
       start("nav");
       setNavigatingId(item._id);
-      if (status.status === "not-attempted")
-        router.push(`/subscriptions/attempts/attempt-paper?paperId=${item._id}`);
-      else if (status.status === "in-progress")
+      if (status.status === "not-attempted") {
+        // Show rules dialog for new attempts
+        setRulesDialog({ isOpen: true, paperId: item._id });
+        setRulesAccepted(false);
+      } else if (status.status === "in-progress")
         router.push(`/subscriptions/attempts/attempt-paper?attemptId=${attempt?._id}`);
       else router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${attempt?._id}`);
     } else {
@@ -260,6 +267,20 @@ export default function ExplorePage() {
       setNavigatingId(item._id);
       router.push(`/subscriptions`);
     }
+  };
+
+  const handleRulesAcceptance = () => {
+    if (rulesAccepted && rulesDialog.paperId) {
+      setRulesDialog({ isOpen: false, paperId: null });
+      router.push(`/subscriptions/attempts/attempt-paper?paperId=${rulesDialog.paperId}`);
+    }
+  };
+
+  const handleRulesDialogClose = () => {
+    setRulesDialog({ isOpen: false, paperId: null });
+    setRulesAccepted(false);
+    setNavigatingId(null);
+    stop();
   };
 
   // ----------------------------------
@@ -550,6 +571,60 @@ export default function ExplorePage() {
           onClose={() => setPaymentModal({ isOpen: false, data: null })}
           paymentData={paymentModal.data}
         />
+      )}
+
+      {/* Rules Dialog */}
+      {rulesDialog.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Test Rules & Guidelines</h2>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-700 text-sm">You get +1 score for correct answers, 0 for wrong answers</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-700 text-sm">You can start only one attempt at a time</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-700 text-sm">You cannot start another attempt without submitting this attempt</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-gray-700 text-sm">Be fair and avoid cheating so that everyone gets a fair platform</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 mb-6">
+              <input
+                type="checkbox"
+                id="rulesAccepted"
+                checked={rulesAccepted}
+                onChange={(e) => setRulesAccepted(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="rulesAccepted" className="text-sm text-gray-700">
+                I have read and agree to follow these rules
+              </label>
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleRulesDialogClose}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRulesAcceptance}
+                disabled={!rulesAccepted}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
