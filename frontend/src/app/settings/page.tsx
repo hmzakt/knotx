@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Moon, Sun, Monitor, Settings as SettingsIcon, Lock, Eye, EyeOff } from "lucide-react";
@@ -44,7 +45,7 @@ export default function SettingsPage() {
   ];
 
   // Password change handlers
-  const handleChangePassword = async (e) => {
+  const handleChangePassword = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       setPasswordMessage("New passwords don't match");
@@ -69,7 +70,13 @@ export default function SettingsPage() {
       setConfirmPassword("");
       setShowChangePassword(false);
     } catch (error) {
-      setPasswordMessage(error.response?.data?.message || "Failed to change password");
+      if (axios.isAxiosError(error)) {
+        setPasswordMessage(error.response?.data?.message || "Failed to change password");
+      } else if (error instanceof Error) {
+        setPasswordMessage(error.message || "Failed to change password");
+      } else {
+        setPasswordMessage("Failed to change password");
+      }
     } finally {
       setIsChangingPassword(false);
     }
