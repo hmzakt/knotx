@@ -418,60 +418,79 @@ export default function Home() {
         <div className="container mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo + Contact */}
           <div className="space-y-4">
-            <div className="bg-emerald-500 p-2 rounded-md w-10 h-10 flex items-center justify-center text-white font-bold">
-              S
+            <div className="w-20 h-auto flex items-center justify-center text-white font-bold">
+              <img src="/logo.png" alt="KnotX logo" className="w-32 h-auto" />
             </div>
             <div className="space-y-2 text-sm text-gray-400">
               <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4" /> hello@skillbridge.com
+                <Mail className="w-4 h-4" /> hello@knotx.com
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" /> +91 91813 23 2309
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> Somewhere in the World
+                <MapPin className="w-4 h-4" /> India
               </div>
             </div>
           </div>
 
           {/* Links */}
           <div>
-            <h4 className="font-semibold mb-2">Home</h4>
+            <h4 className="font-semibold mb-2">Platform</h4>
             <ul className="space-y-1 text-sm text-gray-400">
-              <li>Benefits</li>
-              <li>Our Courses</li>
-              <li>Testimonials</li>
-              <li>FAQ</li>
+              <li>
+                <Link href="/explore" onClick={() => start("nav")} className="hover:text-emerald-500 transition-colors">
+                  Explore Courses
+                </Link>
+              </li>
+              <li>
+                <button onClick={scrollToPricing} className="hover:text-emerald-500 transition-colors">
+                  Pricing
+                </button>
+              </li>
+              <li>
+                <Link href="/settings" onClick={() => start("nav")} className="hover:text-emerald-500 transition-colors">
+                  Settings
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold mb-2">About Us</h4>
+            <h4 className="font-semibold mb-2">Company</h4>
             <ul className="space-y-1 text-sm text-gray-400">
-              <li>Company</li>
-              <li>Achievements</li>
-              <li>Our Goals</li>
+              <li>
+                <Link href="/about" onClick={() => start("nav")} className="hover:text-emerald-500 transition-colors">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <span className="cursor-not-allowed opacity-50">Contact</span>
+              </li>
             </ul>
           </div>
 
           {/* Social */}
           <div>
-            <h4 className="font-semibold mb-2">Social</h4>
+            <h4 className="font-semibold mb-2">Connect</h4>
             <div className="flex gap-3">
               <Button
                 size="icon"
                 className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg"
+                onClick={() => window.open('https://facebook.com', '_blank')}
               >
                 F
               </Button>
               <Button
                 size="icon"
                 className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg"
+                onClick={() => window.open('https://twitter.com', '_blank')}
               >
                 T
               </Button>
               <Button
                 size="icon"
                 className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg"
+                onClick={() => window.open('https://linkedin.com', '_blank')}
               >
                 in
               </Button>
@@ -479,7 +498,7 @@ export default function Home() {
           </div>
         </div>
         <p className="mt-8 text-center text-xs text-gray-500">
-          © 2023 Skillbridge. All rights reserved.
+          © 2025 hmz_akt All rights reserved.
         </p>
       </footer>
     </div>
