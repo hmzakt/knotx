@@ -21,6 +21,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import { motion } from "framer-motion";
+import { SparklesAbout } from "@/components/about";
 
 export default function About() {
   const { start } = useRouteLoading();
@@ -105,15 +106,7 @@ export default function About() {
               transition={{ duration: 0.6 }}
               className="space-y-6"
             >
-              <div className="inline-flex items-center gap-3 bg-black/80 backdrop-blur-sm border border-emerald-700 px-6 py-3 rounded-xl shadow-lg">
-                <div className="bg-emerald-500/20 p-3 rounded-lg">
-                  <PlaneTakeoff className="w-6 h-6 text-emerald-500" />
-                </div>
-                <h1 className="text-3xl md:text-4xl font-bold leading-tight">
-                  <span className="text-emerald-500">About</span>{" "}
-                  <span className="text-foreground">Knotx</span>
-                </h1>
-              </div>
+             
 
               <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
                 Empowering DGCA Students Through
@@ -148,27 +141,7 @@ export default function About() {
 
           {/* Right visual */}
           <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="bg-black/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-emerald-700/50">
-                <div className="grid grid-cols-2 gap-4">
-                  {[1, 2, 3, 4].map((item) => (
-                    <div
-                      key={item}
-                      className="bg-gradient-to-br from-emerald-900/30 to-emerald-800/30 rounded-xl p-4 border border-emerald-700 shadow-sm hover:shadow-md transition-shadow duration-300"
-                    >
-                      <div className="w-8 h-8 bg-emerald-500 rounded-lg mb-2 shadow-sm"></div>
-                      <div className="h-2 bg-emerald-600 rounded mb-1"></div>
-                      <div className="h-2 bg-emerald-700 rounded w-3/4"></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
+                <SparklesAbout/>
           </div>
         </div>
       </section>
@@ -327,8 +300,10 @@ export default function About() {
                 <Card key={index} className="p-6 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700">
                   <div className="flex items-start gap-4">
                     <div className="bg-emerald-500 p-2 rounded-lg">
-                      {feature.icon}
-                    </div>
+                        {React.isValidElement(feature.icon)
+                    ? React.cloneElement(feature.icon as React.ReactElement<any>, { className: "w-6 h-6 text-white" } as any)
+                          : feature.icon}
+                      </div>
                     <div>
                       <h4 className="text-lg font-semibold mb-2">{feature.title}</h4>
                       <p className="text-muted-foreground">{feature.description}</p>
@@ -352,7 +327,9 @@ export default function About() {
                 <Card key={index} className="p-6 bg-emerald-900/20 border-emerald-700">
                   <div className="text-center">
                     <div className="bg-emerald-500 p-3 rounded-lg mx-auto mb-4 w-fit">
-                      {feature.icon}
+                      {React.isValidElement(feature.icon)
+                  ? React.cloneElement(feature.icon as React.ReactElement<any>, { className: "w-6 h-6 text-white" } as any)
+                        : feature.icon}
                     </div>
                     <h4 className="text-lg font-semibold mb-2">{feature.title}</h4>
                     <p className="text-muted-foreground text-sm">{feature.description}</p>
