@@ -59,6 +59,7 @@ export default function BeamsBackground({
   intensity = "strong",
   children,
 }: AnimatedGradientBackgroundProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const beamsRef = useRef<Beam[]>([]);
   const animationFrameRef = useRef<number>(0);
@@ -83,13 +84,20 @@ export default function BeamsBackground({
     const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const updateCanvasSize = () => {
+      // Use the component container size when available so canvas matches the visible area
+      const container = containerRef.current;
+      const containerRect = container?.getBoundingClientRect();
+      const targetWidth = containerRect ? Math.max(Math.floor(containerRect.width), 0) : window.innerWidth;
+      const targetHeight = containerRect ? Math.max(Math.floor(containerRect.height), 0) : window.innerHeight;
+
       // Lower DPR on mobile to reduce fill-rate cost
       const dprCap = isMobile() ? 1 : 1.5;
       const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
-      canvas.width = Math.floor(window.innerWidth * dpr);
-      canvas.height = Math.floor(window.innerHeight * dpr);
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
+
+      canvas.width = Math.max(1, Math.floor(targetWidth * dpr));
+      canvas.height = Math.max(1, Math.floor(targetHeight * dpr));
+      canvas.style.width = `${targetWidth}px`;
+      canvas.style.height = `${targetHeight}px`;
       // Reset transform before applying new scale to avoid accumulation across resizes
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
@@ -215,10 +223,13 @@ export default function BeamsBackground({
     };
   }, [intensity]);
 
-  return (
+    return (
     <div
+      ref={containerRef}
       className={cn(
-        "relative h-[80vh] w-full overflow-hidden bg-black",
+        // On small screens let the container size itself and allow overflow (prevents clipping)
+        // On md+ keep the original 80vh immersive background and hide overflow
+        "relative h-auto md:h-[80vh] w-full overflow-visible md:overflow-hidden bg-black",
         className
       )}
     >

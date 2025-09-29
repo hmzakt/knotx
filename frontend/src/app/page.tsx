@@ -13,6 +13,8 @@ import {
   Plus,
   PlaneTakeoff,
   CrownIcon,
+  Instagram,
+  Linkedin,
 } from "lucide-react";
 
 import BeamsBackground from "@/components/kokonutui/beams-background";
@@ -65,6 +67,8 @@ const offers: Offer[] = [
 
 export default function Home() {
   const { start, stop } = useRouteLoading();
+  const contactEmail = "mail2knotx@gmail.com";
+  const contactPhone = "+917488830684";
   const [expanded, setExpanded] = useState<number | null>(null);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
     const [paymentModal, setPaymentModal] = useState<{ isOpen: boolean; data: any }>({
@@ -135,7 +139,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground font-vietnam">
       <BeamsBackground>
-        <section className="container mx-auto px-4 py-16 md:py-24">
+        
+        <section className="container mx-auto px-4 pt-20 pb-8 md:py-24">
           <div className="flex flex-col md:flex-row items-center justify-between gap-10 max-w-6xl mx-auto">
             {/* Left content */}
             <div className="w-full md:w-1/2 text-center md:text-left">
@@ -175,11 +180,11 @@ export default function Home() {
             </div>
 
             {/* Right image */}
-            <div className="w-full md:w-1/2 flex justify-center md:justify-end">
+            <div className="w-full md:w-1/2 flex justify-center md:justify-end px-4 mt-6 md:mt-0">
               <Image
                 src="/herocover.png"
                 alt="Learning illustration"
-                className="w-full h-auto object-cover transition-transform duration-300 hover:scale-110"
+                className="w-full h-auto object-contain object-center max-h-[32vh] sm:max-h-[36vh] md:max-h-none max-w-xs sm:max-w-md md:max-w-none transition-transform duration-300 hover:scale-105"
                 width={800}
                 height={600}
                 sizes="(max-width: 768px) 90vw, (max-width: 1024px) 50vw, 600px"
@@ -197,43 +202,49 @@ export default function Home() {
         </h2>
 
         {/* items-start prevents grid children from stretching to the row's tallest item */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-6 lg:px-20 items-start">
-          {offers.map((offer) => (
-            <div
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-6 lg:px-20 items-start">
+          {offers.map((offer, idx) => (
+            <motion.div
               key={offer.id}
-              className="self-start bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 shadow-md flex flex-col items-center text-center relative overflow-hidden rounded-2xl p-6"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.6, delay: idx * 0.12 }}
+              className="self-start"
             >
-              {offer.icon}
-              <h3 className="mt-4 text-lg font-semibold text-neutral-900 dark:text-white">
-                {offer.title}
-              </h3>
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 shadow-md flex flex-col items-center text-center relative overflow-hidden rounded-2xl p-6">
+                {offer.icon}
+                <h3 className="mt-4 text-lg font-semibold text-neutral-900 dark:text-white">
+                  {offer.title}
+                </h3>
 
-              <button
-                aria-expanded={expanded === offer.id}
-                onClick={() =>
-                  setExpanded((prev) => (prev === offer.id ? null : offer.id))
-                }
-                className="mt-6 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition"
-              >
-                {expanded === offer.id ? "Show Less" : "Learn More"}
-              </button>
+                <button
+                  aria-expanded={expanded === offer.id}
+                  onClick={() =>
+                    setExpanded((prev) => (prev === offer.id ? null : offer.id))
+                  }
+                  className="mt-6 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition"
+                >
+                  {expanded === offer.id ? "Show Less" : "Learn More"}
+                </button>
 
-              <AnimatePresence initial={false}>
-                {expanded === offer.id && (
-                  <motion.div
-                    key={`details-${offer.id}`}
-                    layout
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.28 }}
-                    className="mt-4 text-sm text-neutral-700 dark:text-neutral-200 w-full"
-                  >
-                    {offer.details}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                <AnimatePresence initial={false}>
+                  {expanded === offer.id && (
+                    <motion.div
+                      key={`details-${offer.id}`}
+                      layout
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.28 }}
+                      className="mt-4 text-sm text-neutral-700 dark:text-neutral-200 w-full"
+                    >
+                      {offer.details}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -251,6 +262,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {/*Papers*/}
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
           <Card className="bg-card border border-border p-6 rounded-xl shadow hover:shadow-md flex flex-col h-full">
             <h3 className="text-lg font-semibold text-center mb-4">Papers</h3>
             <div className="text-center mb-6">
@@ -285,8 +297,10 @@ export default function Home() {
               </Button>
             </Link>
           </Card>
+          </motion.div>
 
           {/*Series*/}
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.08 }}>
           <Card className="bg-card border border-border p-6 rounded-xl shadow hover:shadow-md flex flex-col h-full">
             <h3 className="text-lg font-semibold text-center mb-4">Test Series</h3>
             <div className="text-center mb-6">
@@ -321,8 +335,10 @@ export default function Home() {
               </Button>
             </Link>
           </Card>
+          </motion.div>
 
           {/*Pro*/}
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.16 }}>
           <Card className="bg-card border border-border p-6 rounded-xl shadow hover:shadow-md flex flex-col h-full">
             <h3 className="text-lg font-semibold text-center mb-4">Pro</h3>
             <div className="text-center mb-6">
@@ -369,6 +385,7 @@ export default function Home() {
               <CrownIcon/>Get Pro
             </Button>
           </Card>
+          </motion.div>
         </div>
       </section>
 
@@ -407,7 +424,6 @@ export default function Home() {
         isOpen={paymentModal.isOpen}
         onClose={() => setPaymentModal({ isOpen: false, data: null })}
         onPaymentSuccess={() => {
-          // Optionally, you can add routing or a toast here
           console.log("Payment successful for All Access");
         }}
         paymentData={paymentModal.data}
@@ -416,20 +432,34 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-card py-10 px-4 mt-16 border-t border-border">
         <div className="container mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Logo + Contact */}
           <div className="space-y-4">
             <div className="w-20 h-auto flex items-center justify-center text-white font-bold">
               <img src="/logo.png" alt="KnotX logo" className="w-32 h-auto" />
             </div>
             <div className="space-y-2 text-sm text-gray-400">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4" /> hello@knotx.com
+              <div className="flex items-center gap-2 cursor-pointer">
+                <Mail className="w-4 h-4" />
+                <a href={`mailto:${contactEmail}`} className="hover:underline">
+                  {contactEmail}
+                </a>
+              </div>
+              <div className="flex items-center gap-2 cursor-pointer">
+                <Phone className="w-4 h-4" />
+                <a
+                  href={`tel:${contactPhone}`}
+                  className="hover:underline"
+                  onClick={async (e) => {
+                    try {
+                      await navigator.clipboard.writeText(contactPhone);
+                    } catch (err) {
+                    }
+                  }}
+                >
+                  {contactPhone}
+                </a>
               </div>
               <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4" /> +91 91813 23 2309
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> India
+                <MapPin className="w-4 h-4" /> Noida, India
               </div>
             </div>
           </div>
@@ -476,23 +506,26 @@ export default function Home() {
               <Button
                 size="icon"
                 className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg"
-                onClick={() => window.open('https://facebook.com', '_blank')}
+                onClick={() => window.open('https://www.instagram.com/hmz_akt/', '_blank')}
+                aria-label="Instagram"
               >
-                F
+                <Instagram className="w-4 h-4" />
               </Button>
               <Button
                 size="icon"
                 className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg"
-                onClick={() => window.open('https://twitter.com', '_blank')}
+                onClick={() => window.open('https://x.com/hmz_akt', '_blank')}
+                aria-label="X"
               >
-                T
+                <X className="w-4 h-4" />
               </Button>
               <Button
                 size="icon"
                 className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg"
-                onClick={() => window.open('https://linkedin.com', '_blank')}
+                onClick={() => window.open('https://www.linkedin.com/in/hmzakt/', '_blank')}
+                aria-label="LinkedIn"
               >
-                in
+                <Linkedin className="w-4 h-4" />
               </Button>
             </div>
           </div>
