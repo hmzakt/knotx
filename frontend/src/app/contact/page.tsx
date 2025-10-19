@@ -21,7 +21,7 @@ function ContactUs() {
             process.env.EMAILJS_SERVICE_ID!,
             'template_0ws5zl7',
             { email, message },
-            process.env.EMAILJS_PUBLIC_KEY
+            process.env.EMAILJS_PUBLIC_KEY!
         ).then(() => {
             setStatus('success');
             setEmail('');
