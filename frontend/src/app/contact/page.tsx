@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FormEvent, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import { BackgroundBeams } from '@/components/ui/background-beams';
 import { Button } from '@/components/ui/button';
 import { Mail, Phone, MapPin, Instagram, Linkedin, X } from 'lucide-react';
@@ -13,22 +13,43 @@ function ContactUs() {
     const contactEmail = 'mail2knotx@gmail.com';
     const contactPhone = '+917488830684';
 
+    const emailjsServiceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+    const emailjsTemplateId = 'template_0ws5zl7';
+    const emailjsPublicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY; // user_id
+
+    useEffect(() => {
+        if (emailjsPublicKey) {
+            try {
+                emailjs.init(emailjsPublicKey);
+            } catch (err) {
+                console.error('EmailJS init error', err);
+            }
+        }
+    }, [emailjsPublicKey]);
+
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        // Basic guard: ensure required EmailJS config is present
+        if (!emailjsServiceId || !emailjsTemplateId || !emailjsPublicKey) {
+            // eslint-disable-next-line no-console
+            console.error('Missing EmailJS configuration. Make sure NEXT_PUBLIC_EMAILJS_* env vars are set.');
+            setStatus('error');
+            return;
+        }
+
         setStatus('loading');
 
-        emailjs.send(
-            process.env.EMAILJS_SERVICE_ID!,
-            'template_0ws5zl7',
-            { email, message },
-            process.env.EMAILJS_PUBLIC_KEY!
-        ).then(() => {
-            setStatus('success');
-            setEmail('');
-            setMessage('');
-        }).catch(() => {
-            setStatus('error');
-        });
+        emailjs.send(emailjsServiceId, emailjsTemplateId, { from_email: email, message }, emailjsPublicKey)
+            .then(() => {
+                setStatus('success');
+                setEmail('');
+                setMessage('');
+            })
+            .catch((err: any) => {
+                // eslint-disable-next-line no-console
+                console.error('EmailJS send error', err);
+                setStatus('error');
+            });
     };
 
     return (
