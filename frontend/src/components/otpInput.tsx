@@ -6,9 +6,10 @@ interface Props {
   challenge: string;
   expiresInMs?: number; // optional initial expiry from server
   onVerify: () => void;
+  onError?: (message: string) => void; // callback for error handling
 }
 
-export default function OtpInput({ email, challenge, expiresInMs, onVerify }: Props) {
+export default function OtpInput({ email, challenge, expiresInMs, onVerify, onError }: Props) {
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(0);
 
@@ -30,7 +31,7 @@ export default function OtpInput({ email, challenge, expiresInMs, onVerify }: Pr
 
   const handleVerify = async () => {
     if (timer === 0) {
-      alert("OTP expired. Request a new one.");
+      onError?.("OTP expired. Request a new one.");
       return;
     }
     try {
@@ -41,13 +42,12 @@ export default function OtpInput({ email, challenge, expiresInMs, onVerify }: Pr
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        alert("OTP verified ✅");
         onVerify();
       } else {
-        alert(data.message || "Invalid OTP ❌");
+        onError?.(data.message || "Invalid OTP");
       }
     } catch (err) {
-      alert("Verification failed. Try again.");
+      onError?.("Verification failed. Try again.");
     }
   };
 
@@ -58,19 +58,19 @@ export default function OtpInput({ email, challenge, expiresInMs, onVerify }: Pr
         value={otp}
         onChange={(e) => setOtp(e.target.value)}
         placeholder="Enter OTP"
-        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+        className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
       />
       <button
         type="button"
         onClick={handleVerify}
-        className="w-full py-2 px-4 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none"
+        className="w-full py-2 px-4 bg-emerald-600 text-white font-medium rounded-md hover:bg-emerald-700 focus:outline-none"
       >
         Verify OTP
       </button>
       {timer > 0 ? (
-        <p className="text-sm text-gray-500 text-center">OTP expires in {timer}s</p>
+        <p className="text-sm text-neutral-300 text-center">OTP expires in {timer}s</p>
       ) : (
-        <p className="text-sm text-red-500 text-center">OTP expired. Request a new one.</p>
+        <p className="text-sm text-red-400 text-center">OTP expired. Request a new one.</p>
       )}
     </div>
   );

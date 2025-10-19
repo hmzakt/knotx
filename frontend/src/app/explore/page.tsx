@@ -115,7 +115,7 @@ export default function ExplorePage() {
         itemDescription: 'Unlimited access to all papers and test series',
         baseAmount: allAccessAmountPaise,
         currency: 'INR',
-        durationDays: 30,
+        durationDays: 365,
       };
     }
 
@@ -131,7 +131,7 @@ export default function ExplorePage() {
       itemDescription: isPaper ? (item as Paper).subject : (item as TestSeries).description || 'Test Series',
       baseAmount: amountPaise,
       currency: 'INR',
-      durationDays: 30,
+      durationDays: isPaper ? 30 : 180,
     };
   };
 
@@ -432,6 +432,10 @@ export default function ExplorePage() {
                     disabled={navigatingId === item._id}
                     onClick={() => {
                       if (isPaper) {
+                        // Check if user has access first
+                        if (!hasAccess) {
+                          return handleItemClick(item, activeTab, hasAccess);
+                        }
                         // Use inline start for papers so we can show 409 conflicts inline
                         const status = getAttemptStatus((item as Paper)._id);
                         if (status.status === 'not-attempted') return handleStartAttemptInline((item as Paper)._id);

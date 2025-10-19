@@ -67,6 +67,13 @@ export const createRazorpayOrder = async (req, res) => {
       }
     }
 
+    // Normalize duration server-side by type to ensure DB correctness
+    let normalizedDuration = Number(durationDays || 30);
+    if (!Number.isFinite(normalizedDuration) || normalizedDuration <= 0) normalizedDuration = 30;
+    if (type === 'single-paper') normalizedDuration = 30;
+    else if (type === 'test-series') normalizedDuration = 180;
+    else if (type === 'all-access') normalizedDuration = 365;
+
     // create Razorpay order
     const order = await razorpay.orders.create({
       amount: finalAmount,
@@ -77,7 +84,7 @@ export const createRazorpayOrder = async (req, res) => {
         type,
         itemId: itemId || "",
         promoCode: promoCode || "",
-        durationDays: String(durationDays)
+        durationDays: String(normalizedDuration)
       }
     });
 

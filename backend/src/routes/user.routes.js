@@ -7,7 +7,8 @@ import { changeCurrentPassword,
         refreshAccessToken,
          registerUser,
           updateAccountDetails,
-           updateUserAvatar
+           updateUserAvatar,
+           forgotPassword
           } from "../controllers/user.controller.js"
 import {upload} from "../middlewares/multer.middelware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -23,6 +24,7 @@ router.route("/register").post(
     registerUser)
 
 router.route("/login").post(loginUser)
+router.route("/forgot-password").post(forgotPassword)
  
 //secured routes
 router.route("/logout").post(verifyJWT, logoutUser);

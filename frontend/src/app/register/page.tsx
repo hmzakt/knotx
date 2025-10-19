@@ -234,6 +234,7 @@ export default function Register() {
                 setOtpVerified(true);
                 setVerifiedEmail(otpEmail ?? emailValue);
               }}
+              onError={setError}
             />
           )}
 

@@ -324,32 +324,32 @@ function AttemptPaperPageInner() {
 
 
   if (loading) return (
-    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
       <div className="text-center">
         <LoadingSpinner size="lg" />
-        <p className={`mt-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading your attempt...</p>
+        <p className={`mt-4 font-mono ${isDarkMode ? 'text-emerald-500' : 'text-emerald-600'}`}>LOADING...</p>
       </div>
     </div>
   );
   
   if (!questions.length) return (
-    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="text-center">
-        <div className={`w-16 h-16 ${isDarkMode ? 'bg-red-900' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-          <svg className={`w-8 h-8 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
+      <div className="text-center px-4">
+        <div className={`w-16 h-16 border-2 ${isDarkMode ? 'border-emerald-500 bg-emerald-500' : 'border-emerald-600 bg-emerald-600'} flex items-center justify-center mx-auto mb-4`}>
+          <svg className={`w-8 h-8 ${isDarkMode ? 'text-black' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
         </div>
-        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>No Questions Loaded</h2>
-        <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>There was an issue loading the questions for this attempt.</p>
+        <h2 className={`text-2xl font-bold font-mono ${isDarkMode ? 'text-emerald-500' : 'text-emerald-600'} mb-2`}>NO QUESTIONS LOADED</h2>
+        <p className={`${isDarkMode ? 'text-white' : 'text-black'} mb-6`}>There was an issue loading the questions for this attempt.</p>
         <Button 
           onClick={() => { start('nav'); router.push('/subscriptions'); }} 
-          className={`${isDarkMode 
-            ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-            : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+          className={`border-2 ${isDarkMode 
+            ? 'border-emerald-500 bg-emerald-500 text-black hover:bg-emerald-400' 
+            : 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-500'
           }`}
         >
-          Back to Subscriptions
+          BACK TO SUBSCRIPTIONS
         </Button>
       </div>
     </div>
@@ -359,100 +359,101 @@ function AttemptPaperPageInner() {
   // timers removed; no displaySeconds or fmtSec
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
       {/* Header */}
-      <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b shadow-sm`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className={`${isDarkMode ? 'bg-black border-emerald-500' : 'bg-white border-emerald-600'} border-b-2`}>
+        <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
                 onClick={() => { start('nav'); router.push('/subscriptions'); }}
                 variant="outline"
-                className={`flex items-center space-x-2 ${isDarkMode 
-                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                size="sm"
+                className={`border-2 ${isDarkMode 
+                  ? 'border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-black' 
+                  : 'border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white'
                 }`}
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
               </Button>
-              <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Question {currentIndex + 1} of {totalQuestions}
+              <div className={`text-sm font-mono ${isDarkMode ? 'text-emerald-500' : 'text-emerald-600'}`}>
+                {currentIndex + 1} / {totalQuestions}
               </div>
             </div>
             
             {/* Dark Mode Toggle */}
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                variant="outline"
-                size="sm"
-                className={`${isDarkMode 
-                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </Button>
-            </div>
+            <Button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              variant="outline"
+              size="sm"
+              className={`border-2 ${isDarkMode 
+                ? 'border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-black' 
+                : 'border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+              }`}
+            >
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Conflict banner: shown if a start attempt returned 409 with remaining time */}
       {conflictInfo && (
-        <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4`}> 
-          <div className={`${isDarkMode ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'} rounded-lg p-4 flex items-center justify-between`}> 
-            <div>
-              <div className="font-semibold">An attempt is already in progress</div>
-              <div className="text-sm">
-                {conflictInfo.message || 'You cannot start a new attempt right now.'}
+        <div className="max-w-6xl mx-auto px-4 py-3"> 
+          <div className={`${isDarkMode ? 'bg-emerald-500 text-black' : 'bg-emerald-600 text-white'} p-4 border-l-4 border-emerald-400`}> 
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-bold">Attempt in Progress</div>
+                <div className="text-sm opacity-90">
+                  {conflictInfo.message || 'You cannot start a new attempt right now.'}
+                </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              {conflictInfo.attemptId && (
-                <Button onClick={() => handleResumeAttempt(conflictInfo.attemptId)} className="bg-emerald-600 text-white">Resume Attempt</Button>
-              )}
-              <Button variant="outline" onClick={() => setConflictInfo(null)}>Dismiss</Button>
+              <div className="flex space-x-2">
+                {conflictInfo.attemptId && (
+                  <Button onClick={() => handleResumeAttempt(conflictInfo.attemptId)} className="bg-black text-white hover:bg-gray-800 border-0">Resume</Button>
+                )}
+                <Button variant="outline" onClick={() => setConflictInfo(null)} className={`border-2 ${isDarkMode ? 'border-black text-black hover:bg-black hover:text-white' : 'border-white text-white hover:bg-white hover:text-black'}`}>Dismiss</Button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Main Question Area */}
           <div className="lg:col-span-3">
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-8`}>
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Question {currentIndex + 1}
+            <div className={`${isDarkMode ? 'bg-black border-emerald-500' : 'bg-white border-emerald-600'} border-2 p-4 sm:p-6 lg:p-8`}>
+              <div className="mb-6 sm:mb-8">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-2 sm:gap-0">
+                  <h2 className={`text-xl sm:text-2xl font-bold ${isDarkMode ? 'text-emerald-500' : 'text-emerald-600'}`}>
+                    Q{currentIndex + 1}
                   </h2>
-                  <div className={`flex items-center space-x-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      <div className={`w-3 h-3 rounded-full ${
-                        answers[currentIndex] != null ? 'bg-emerald-500' : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')
+                  <div className={`flex items-center space-x-2 text-xs sm:text-sm ${isDarkMode ? 'text-emerald-500' : 'text-emerald-600'}`}>
+                      <div className={`w-2 h-2 sm:w-3 sm:h-3 ${
+                        answers[currentIndex] != null ? (isDarkMode ? 'bg-emerald-500' : 'bg-emerald-600') : 'bg-gray-400'
                       }`}></div>
-                      <span>{answers[currentIndex] != null ? 'Answered' : 'Not Answered'}</span>
+                      <span className="font-mono">{answers[currentIndex] != null ? 'ANSWERED' : 'NOT ANSWERED'}</span>
                     </div>
                 </div>
                 
-                <div className="prose prose-lg max-w-none">
-                  <p className={`${isDarkMode ? 'text-gray-200' : 'text-gray-800'} leading-relaxed mb-8`}>
+                <div className="mb-6 sm:mb-8">
+                  <p className={`${isDarkMode ? 'text-white' : 'text-black'} text-base sm:text-lg leading-relaxed`}>
                     {currentQ.text}
                   </p>
                 </div>
               </div>
 
               {/* Options */}
-              <div className="space-y-4 mb-8">
+              <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
                 {currentQ.options.map((opt, optIndex) => (
                   <label
                     key={opt.index}
-                    className={`block p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                    className={`block p-3 sm:p-4 border-2 cursor-pointer transition-all duration-150 ${
                       (isAnsweredAt(currentIndex) && Number(answers[currentIndex]) === optIndex)
-                        ? (isDarkMode ? 'border-emerald-500 bg-emerald-900/30 shadow-md' : 'border-emerald-500 bg-emerald-50 shadow-md')
-                        : (isDarkMode ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-700' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50')
+                        ? (isDarkMode ? 'border-emerald-500 bg-emerald-500 text-black' : 'border-emerald-600 bg-emerald-600 text-white')
+                        : (isDarkMode ? 'border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-black' : 'border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white')
                     }`}
                   >
                     <div className="flex items-center">
@@ -463,16 +464,16 @@ function AttemptPaperPageInner() {
                         onChange={() => handleSelectOption(currentIndex, optIndex)}
                         className="sr-only"
                       />
-                      <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center ${
+                      <div className={`w-3 h-3 sm:w-4 sm:h-4 border-2 mr-3 sm:mr-4 flex items-center justify-center flex-shrink-0 ${
                         (isAnsweredAt(currentIndex) && Number(answers[currentIndex]) === optIndex)
-                          ? 'border-emerald-500 bg-emerald-500'
-                          : (isDarkMode ? 'border-gray-500' : 'border-gray-300')
+                          ? (isDarkMode ? 'border-black bg-black' : 'border-white bg-white')
+                          : (isDarkMode ? 'border-emerald-500' : 'border-emerald-600')
                       }`}>
                         {isAnsweredAt(currentIndex) && Number(answers[currentIndex]) === optIndex && (
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                          <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 ${isDarkMode ? 'bg-emerald-500' : 'bg-emerald-600'}`}></div>
                         )}
                       </div>
-                      <span className={`${isDarkMode ? 'text-gray-200' : 'text-gray-800'} font-medium`}>
+                      <span className="font-medium text-sm sm:text-base leading-relaxed">
                         {opt.optionText}
                       </span>
                     </div>
@@ -481,23 +482,27 @@ function AttemptPaperPageInner() {
               </div>
 
               {/* Navigation Buttons */}
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
                 <Button
                   onClick={handlePrev}
                   disabled={currentIndex === 0}
                   variant="outline"
-                  className={`flex items-center space-x-2 ${isDarkMode 
-                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  className={`border-2 w-full sm:w-auto ${isDarkMode 
+                    ? 'border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-black disabled:border-gray-600 disabled:text-gray-600' 
+                    : 'border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:border-gray-400 disabled:text-gray-400'
                   }`}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  Previous
                 </Button>
 
-                <div className="flex space-x-3">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                   <Button
                     onClick={handleSaveAndNext}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                    className={`border-2 w-full sm:w-auto ${isDarkMode 
+                      ? 'border-emerald-500 bg-emerald-500 text-black hover:bg-emerald-400' 
+                      : 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-500'
+                    }`}
                   >
                     <Save className="w-4 h-4 mr-2" />
                     Save & Next
@@ -507,37 +512,40 @@ function AttemptPaperPageInner() {
                     onClick={handleNext}
                     disabled={currentIndex === questions.length - 1}
                     variant="outline"
-                    className={`flex items-center space-x-2 ${isDarkMode 
-                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    className={`border-2 w-full sm:w-auto ${isDarkMode 
+                      ? 'border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-black disabled:border-gray-600 disabled:text-gray-600' 
+                      : 'border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:border-gray-400 disabled:text-gray-400'
                     }`}
                   >
-                    <span>Next</span>
-                    <ChevronRight className="w-4 h-4" />
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
 
                 <Button
                   onClick={handleSubmit}
-                  className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                  className={`border-2 w-full sm:w-auto ${isDarkMode 
+                    ? 'border-black bg-black text-emerald-500 hover:bg-gray-800' 
+                    : 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-500'
+                  }`}
                 >
                   <Trophy className="w-4 h-4 mr-2" />
-                  Submit & Exit
+                  Submit
                 </Button>
               </div>
             </div>
           </div>
 
           {/* Question Navigator Sidebar */}
-          <div className="lg:col-span-1">
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6 sticky top-8`}>
-              <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                Question Navigator
+          <div className="lg:col-span-1 order-first lg:order-last">
+            <div className={`${isDarkMode ? 'bg-black border-emerald-500' : 'bg-white border-emerald-600'} border-2 p-4 sm:p-6 sticky top-4`}>
+              <h3 className={`text-base sm:text-lg font-bold ${isDarkMode ? 'text-emerald-500' : 'text-emerald-600'} mb-3 sm:mb-4 font-mono`}>
+                NAVIGATOR
               </h3>
 
               {/* Helper getters to account for numeric and string keys from localStorage */}
               {/** render navigator */}
-              <div className="flex flex-wrap gap-3 mb-6">
+              <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
                 {questions.map((q, idx) => {
                   const raw = (answers as any)[idx] ?? (answers as any)[String(idx)];
                   const savedRaw = (savedIndexes as any)[idx] ?? (savedIndexes as any)[String(idx)];
@@ -549,23 +557,41 @@ function AttemptPaperPageInner() {
                   type BaseStatus = 'answered' | 'saved' | 'notAttempted';
                   const baseStatus: BaseStatus = isSaved ? 'saved' : (hasAnswer ? 'answered' : 'notAttempted');
 
-                  const baseClassMap: Record<BaseStatus, string> = {
-                    answered: 'bg-emerald-600 text-white',
-                    saved: isDarkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-500 text-white',
-                    notAttempted: isDarkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  };
+                  // Different colors and styles for each status while showing question numbers
+                  let buttonClass = '';
+                  let textColor = '';
+                  let borderColor = '';
+                  
+                  if (isSaved) {
+                    // Saved: Solid emerald background with white/black text
+                    buttonClass = isDarkMode 
+                      ? 'bg-emerald-500 text-black' 
+                      : 'bg-emerald-600 text-white';
+                    borderColor = isDarkMode ? 'border-emerald-500' : 'border-emerald-600';
+                  } else if (hasAnswer) {
+                    // Answered: Yellow/orange background with black text
+                    buttonClass = isDarkMode 
+                      ? 'bg-yellow-500 text-black' 
+                      : 'bg-yellow-500 text-black';
+                    borderColor = isDarkMode ? 'border-yellow-500' : 'border-yellow-500';
+                  } else {
+                    // Not attempted: Hollow with emerald border
+                    buttonClass = isDarkMode 
+                      ? 'bg-black text-emerald-500 hover:bg-emerald-500 hover:text-black' 
+                      : 'bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white';
+                    borderColor = isDarkMode ? 'border-emerald-500' : 'border-emerald-600';
+                  }
 
-                  // If the question is the current one, overlay a green border/ring but keep the base background
-                  const currentOverlay = isCurrent ? 'ring-2 ring-emerald-300 border-2 border-emerald-500' : '';
+                  // Current question gets a thicker border
+                  const currentOverlay = isCurrent ? 'border-4 border-emerald-400' : '';
 
-                  // Make title reflect combined state (e.g., Answered & Saved) and current
                   const title = `Q${idx + 1}: ${isCurrent ? 'Current' : (hasAnswer && isSaved ? 'Answered & Saved' : isSaved ? 'Saved' : hasAnswer ? 'Answered' : 'Not Attempted')}`;
 
                   return (
                     <button
                       key={q.questionId ?? idx}
                       onClick={() => setCurrentIndex(idx)}
-                      className={`relative w-10 h-10 rounded-lg font-semibold text-sm transition-all duration-200 transform hover:scale-105 ${baseClassMap[baseStatus]} ${currentOverlay}`}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 border-2 font-bold text-xs sm:text-sm transition-all duration-150 flex items-center justify-center ${buttonClass} ${borderColor} ${currentOverlay}`}
                       title={title}
                       aria-current={isCurrent ? 'true' : undefined}
                     >
@@ -589,23 +615,23 @@ function AttemptPaperPageInner() {
                 const notAttemptedCount = questions.length - answeredCount;
 
                 return (
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-emerald-600 rounded-full"></div>
-                      <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                        Answered ({answeredCount})
+                  <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500"></div>
+                      <span className={`font-mono ${isDarkMode ? 'text-yellow-500' : 'text-yellow-600'}`}>
+                        ANSWERED ({answeredCount})
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-3 h-3 ${isDarkMode ? 'bg-yellow-600' : 'bg-yellow-500'} rounded-full`}></div>
-                      <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                        Saved ({savedCount})
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <div className={`w-2 h-2 sm:w-3 sm:h-3 ${isDarkMode ? 'bg-emerald-500' : 'bg-emerald-600'}`}></div>
+                      <span className={`font-mono ${isDarkMode ? 'text-emerald-500' : 'text-emerald-600'}`}>
+                        SAVED ({savedCount})
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-3 h-3 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'} rounded-full`}></div>
-                      <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                        Not Attempted ({notAttemptedCount})
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <div className={`w-2 h-2 sm:w-3 sm:h-3 border-2 ${isDarkMode ? 'border-emerald-500' : 'border-emerald-600'}`}></div>
+                      <span className={`font-mono ${isDarkMode ? 'text-emerald-500' : 'text-emerald-600'}`}>
+                        NOT ATTEMPTED ({notAttemptedCount})
                       </span>
                     </div>
                   </div>
