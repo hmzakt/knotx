@@ -494,7 +494,9 @@ export default function Home() {
                 </Link>
               </li>
               <li>
-                <span className="cursor-not-allowed opacity-50">Contact</span>
+                <Link href="/contact" onClick={() => start("nav")} className="hover:text-emerald-500 transition-colors">
+                  Contact
+                </Link>
               </li>
             </ul>
           </div>
