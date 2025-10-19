@@ -149,14 +149,14 @@ export default function Home() {
                   <PlaneTakeoff className="w-6 h-6 text-emerald-500" />
                 </div>
                 <h1 className="text-3xl md:text-4xl font-bold leading-tight">
-                  <span className="text-emerald-500">KnotX - </span>{" "}
-                  <span className="text-foreground">Your Flight companion</span>
+                  <span className="text-emerald-500">KnotX -</span>{" "}
+                  <span className="text-foreground">Your flight companion in practise</span>
                 </h1>
               </div>
 
               <div className="mt-6">
                 <h2 className="text-xl md:text-2xl font-medium">
-                  Structured practise modules for you
+                  Structured practise modules for DGCA exams
                 </h2>
                 <p className="text-lg text-muted-foreground mt-3">
                   Prepared with feedback by learners and guidance of tutors
