@@ -13,9 +13,8 @@ function ContactUs() {
     const contactEmail = 'mail2knotx@gmail.com';
     const contactPhone = '+917488830684';
 
-    const emailjsServiceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-    const emailjsTemplateId = 'template_0ws5zl7';
-    const emailjsPublicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY; // user_id
+    const emailjsPublicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_CONTACT; // user_id
+
 
     useEffect(() => {
         if (emailjsPublicKey) {
@@ -27,29 +26,22 @@ function ContactUs() {
         }
     }, [emailjsPublicKey]);
 
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+        const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        // Basic guard: ensure required EmailJS config is present
-        if (!emailjsServiceId || !emailjsTemplateId || !emailjsPublicKey) {
-            // eslint-disable-next-line no-console
-            console.error('Missing EmailJS configuration. Make sure NEXT_PUBLIC_EMAILJS_* env vars are set.');
-            setStatus('error');
-            return;
-        }
-
         setStatus('loading');
 
-        emailjs.send(emailjsServiceId, emailjsTemplateId, { from_email: email, message }, emailjsPublicKey)
-            .then(() => {
-                setStatus('success');
-                setEmail('');
-                setMessage('');
-            })
-            .catch((err: any) => {
-                // eslint-disable-next-line no-console
-                console.error('EmailJS send error', err);
-                setStatus('error');
-            });
+        emailjs.send(
+            process.env.NEXT_PUBLIC_EMAILJS_SERVICE_CONTACT!,
+            'template_0ws5zl7',
+            { email, message },
+            process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_CONTACT!
+        ).then(() => {
+            setStatus('success');
+            setEmail('');
+            setMessage('');
+        }).catch(() => {
+            setStatus('error');
+        });
     };
 
     return (
@@ -83,7 +75,13 @@ function ContactUs() {
                     />
                     <button
                         type="submit"
-                        className="px-6 py-2 rounded-lg bg-teal-500 text-white font-medium hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                        disabled={status === 'loading'}
+                        aria-busy={status === 'loading'}
+                        className={`px-6 py-2 rounded-lg text-white font-medium focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                            status === 'loading'
+                                ? 'bg-teal-300 cursor-not-allowed'
+                                : 'bg-teal-500 hover:bg-teal-600'
+                        }`}
                     >
                         {status === 'loading' ? 'Sending...' : 'Send Message'}
                     </button>
