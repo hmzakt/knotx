@@ -108,7 +108,7 @@ export default function ExplorePage() {
     item?: Paper | TestSeries;
   }) => {
     if (args.type === 'all-access') {
-      const allAccessAmountPaise = Number(process.env.NEXT_PUBLIC_ALL_ACCESS_PRICE_PAISE || 99900);
+      const allAccessAmountPaise = Number(process.env.NEXT_PUBLIC_ALL_ACCESS_PRICE_PAISE || 800000);
       return {
         type: 'all-access' as const,
         itemName: 'KnotX Pro — All Access',

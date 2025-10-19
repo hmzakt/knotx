@@ -101,34 +101,34 @@ export default function Home() {
   ];
 
   const faqs = [
-    {
-      question: "Can I enroll in multiple courses at once?",
-      answer:
-        "Absolutely! You can enroll in multiple courses simultaneously and access them at your convenience.",
-    },
-    {
-      question: "What kind of support can I expect from instructors?",
-      answer:
-        "You'll have access to community forums and can reach out to instructors for guidance.",
-    },
-    {
-      question:
-        "Are the courses self-paced or do they have specific start and end dates?",
-      answer: "Most courses are self-paced, allowing you to learn at your own speed.",
-    },
-    {
-      question: "Are there any prerequisites for the courses?",
-      answer:
-        "No prerequisites are required. Courses are designed for both beginners and professionals.",
-    },
-    {
-      question: "Can I download the course materials for offline access?",
-      answer:
-        "Yes, most materials are available for offline access after enrollment.",
-    },
-  ];
+  {
+    question: "Can I purchase multiple papers or test series at once?",
+    answer:
+      "Absolutely! You can access multiple papers or test series simultaneously and use them at your convenience.",
+  },
+  {
+    question: "What kind of support can I expect with a Pro subscription?",
+    answer:
+      "With a Pro subscription, you'll have access to community forums and can reach out to instructors for guidance.",
+  },
+  {
+    question:
+      "Are the tests self-paced, or do they have specific start and end dates?",
+    answer:
+      "Most tests are self-paced, allowing you to learn at your own speed. However, we’ll be introducing timed tests soon.",
+  },
+  {
+    question: "Are there any prerequisites for the tests?",
+    answer:
+      "No prerequisites are required, except a basic understanding of relevant concepts. Our courses are designed for both beginners and professionals.",
+  },
+  {
+    question: "Can I download the course materials for offline access?",
+    answer:
+      "No, course materials are available for online access only.",
+  },
+];
 
-  // helper that scrolls to the pricing section
   const scrollToPricing = () => {
     const el = document.getElementById("pricing");
     if (el) {
