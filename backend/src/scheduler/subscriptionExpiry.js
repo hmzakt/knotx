@@ -1,24 +1,26 @@
-
-import cron from "node-cron"
 import { Subscription } from "../models/subscription.model.js";
 
+export const expireSubscriptions = async () => {
+    try {
+        const now = new Date();
 
-export const startSubscriptionExpiryJob = () => {
-    // We set it to run at midnight
-
-    cron.schedule("0 0 * * *", async () => {
-        try {
-            const now = new Date();
-
-            const result = await Subscription.updateMany({
+        const result = await Subscription.updateMany(
+            {
                 endDate: { $lt: now },
-                status: "active"
+                status: "active",
             },
-                { $set: { status: "expired" } }
-            );
-            console.log(`[Subscription expiry job] updated ${result.modifiedCount} subscriptons to expired`)
-        } catch(error){
-            console.error("[Susbscription expiry job error : ", error)
-        }
-    });
+            {
+                $set: { status: "expired" },
+            }
+        );
+
+        console.log(
+            `[Subscription expiry job] Updated ${result.modifiedCount} subscriptions to expired`
+        );
+
+        return result;
+    } catch (error) {
+        console.error("[Subscription expiry job error]: ", error);
+        throw error;
+    }
 };

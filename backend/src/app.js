@@ -66,8 +66,8 @@ app.use("/api/v1/private",protectedContentRouter);
 
 app.use("/api/v1/attempts", attemptsRouter);
 
-//runs to clean database every midnight for expired subscription
-startSubscriptionExpiryJob();
+import cronRoutes from "./routes/cron.routes.js";
+app.use("/api/v1/cron", cronRoutes);
 
 
 import promoRouter from "./routes/promocode.routes.js";
