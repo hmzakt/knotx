@@ -38,8 +38,23 @@ const userSchema = new Schema(
         ],
         password: {
             type: String,
-            required: [true, 'password is required']
-
+            required: function () {
+                return this.authProvider !== "google";
+            }
+        },
+        authProvider: {
+            type: String,
+            enum: ["local", "google"],
+            default: "local"
+        },
+        googleId: {
+            type: String,
+            unique: true,
+            sparse: true
+        },
+        emailVerified: {
+            type: Boolean,
+            default: false
         },
         role: {
             type: String,
@@ -54,12 +69,13 @@ const userSchema = new Schema(
 
 
 userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
+    if (!this.isModified("password") || !this.password) return next();
     this.password = await bcrypt.hash(this.password, 10)
     next();
 })
 
 userSchema.methods.isPasswordCorrect = async function (password) {
+    if (!this.password) return false;
     return await bcrypt.compare(password, this.password)
 }
 

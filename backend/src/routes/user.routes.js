@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { changeCurrentPassword,
+    checkPasswordResetEligibility,
     getCurrentUser,
     getUserSubscriptions,
+    googleAuth,
       loginUser,
        logoutUser,
         refreshAccessToken,
@@ -24,6 +26,8 @@ router.route("/register").post(
     registerUser)
 
 router.route("/login").post(loginUser)
+router.route("/google").post(googleAuth)
+router.route("/password-reset-eligibility").post(checkPasswordResetEligibility)
 router.route("/forgot-password").post(forgotPassword)
  
 //secured routes

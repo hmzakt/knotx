@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Image from "next/image";
 import { useForm, SubmitHandler } from "react-hook-form";
 import Link from "next/link";
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import apiClient from "../../lib/api";
+import GoogleAuthButton from "../../components/GoogleAuthButton";
 
 interface LoginFormData {
   email: string;
@@ -126,6 +127,28 @@ export default function Login() {
     }
   };
 
+  const handleGoogleCredential = useCallback(
+    async (credential: string) => {
+      setIsLoading(true);
+      setError("");
+      setErrorType("");
+
+      try {
+        const response = await apiClient.post("/users/google", { credential });
+        const { user, accessToken } = response.data.data;
+        login(user, accessToken);
+        window.location.href = "/dashboard";
+      } catch (err: unknown) {
+        const errorInfo = getErrorMessage(err as ErrorResponse);
+        setError(errorInfo.message);
+        setErrorType(errorInfo.type);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [login]
+  );
+
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -211,6 +234,20 @@ export default function Login() {
                 </div>
               </div>
             )}
+
+            <div className="mb-5">
+              <GoogleAuthButton
+                text="signin_with"
+                disabled={isLoading}
+                onCredential={handleGoogleCredential}
+              />
+            </div>
+
+            <div className="mb-5 flex items-center gap-3 text-xs uppercase tracking-wide text-neutral-500">
+              <span className="h-px flex-1 bg-neutral-800" />
+              <span>or</span>
+              <span className="h-px flex-1 bg-neutral-800" />
+            </div>
 
             <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
               {/* Email */}

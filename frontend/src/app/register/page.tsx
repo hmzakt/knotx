@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent } from "react";
+import { useCallback, useState, useEffect, ChangeEvent } from "react";
 import Image from "next/image";
 import { useForm, SubmitHandler } from "react-hook-form";
 import Link from "next/link";
 import OtpInput from "../../components/otpInput";
 import apiClient from "../../lib/api";
 import { Eye, EyeOff } from "lucide-react";
+import GoogleAuthButton from "../../components/GoogleAuthButton";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface RegisterFormData {
   fullname: string;
@@ -30,6 +32,7 @@ export default function Register() {
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null); // email that was OTP-verified
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { login } = useAuth();
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -138,6 +141,25 @@ export default function Register() {
     }
   };
 
+  const handleGoogleCredential = useCallback(
+    async (credential: string) => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await apiClient.post("/users/google", { credential });
+        const { user, accessToken } = response.data.data;
+        login(user, accessToken);
+        window.location.href = "/dashboard";
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Failed to continue with Google. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [login]
+  );
+
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       {/* Form card only (removed aside/hero) */}
@@ -155,6 +177,20 @@ export default function Register() {
                 {error}
               </div>
             )}
+
+            <div className="mb-5 flex justify-center">
+              <GoogleAuthButton
+                text="signup_with"
+                disabled={isLoading}
+                onCredential={handleGoogleCredential}
+              />
+            </div>
+
+            <div className="mb-5 flex items-center gap-3 text-xs uppercase tracking-wide text-neutral-500">
+              <span className="h-px flex-1 bg-neutral-800" />
+              <span>or</span>
+              <span className="h-px flex-1 bg-neutral-800" />
+            </div>
 
             <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
           {/* Avatar Upload */}

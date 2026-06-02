@@ -22,6 +22,92 @@ const generateAccessAndRefreshToken = async (userId) => {
     }
 }
 
+const cookieOptions = () => {
+    const isProd = process.env.NODE_ENV === 'production'
+    return {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+    }
+}
+
+const slugifyUsername = (value) => {
+    const base = value
+        ?.toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "")
+        .slice(0, 24);
+
+    return base || `user${Date.now()}`;
+}
+
+const generateUniqueUsername = async (fullname, email) => {
+    const emailPrefix = email?.split("@")[0];
+    const base = slugifyUsername(fullname || emailPrefix);
+    let username = base;
+    let suffix = 1;
+
+    while (await User.exists({ username })) {
+        username = `${base}${suffix}`;
+        suffix += 1;
+    }
+
+    return username;
+}
+
+const verifyGoogleCredential = async (credential) => {
+    if (!process.env.GOOGLE_CLIENT_ID) {
+        throw new ApiError(500, "Google login is not configured")
+    }
+
+    if (!credential) {
+        throw new ApiError(400, "Google credential is required")
+    }
+
+    const response = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+    )
+
+    if (!response.ok) {
+        throw new ApiError(401, "Invalid Google credential")
+    }
+
+    const payload = await response.json()
+
+    if (payload.aud !== process.env.GOOGLE_CLIENT_ID) {
+        throw new ApiError(401, "Google credential is not meant for this app")
+    }
+
+    if (payload.email_verified !== "true" && payload.email_verified !== true) {
+        throw new ApiError(401, "Google email is not verified")
+    }
+
+    if (!payload.sub || !payload.email) {
+        throw new ApiError(401, "Google credential is missing account details")
+    }
+
+    return payload
+}
+
+const sendAuthResponse = async (res, userId, message) => {
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(userId)
+    const loggedInUser = await User.findById(userId).select("-password -refreshToken").lean();
+    const options = cookieOptions()
+
+    return res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedInUser, accessToken, refreshToken
+                },
+                message
+            )
+        )
+}
+
 const registerUser = asyncHandler(async (req, res) => {
     const {fullname, email, username, password} = req.body;
 
@@ -105,36 +191,61 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User does not exist")
     }
 
+    if (!user.password) {
+        throw new ApiError(400, "This account uses Google sign-in. Please continue with Google.")
+    }
+
     const isPasswordValid = await user.isPasswordCorrect(password)
 
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid user credentials")
     }
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)
+    return sendAuthResponse(res, user._id, "user logged in successfully")
+})
 
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken").lean();
+const googleAuth = asyncHandler(async (req, res) => {
+    const { credential } = req.body
+    const googleUser = await verifyGoogleCredential(credential)
+    const email = googleUser.email.toLowerCase()
 
-    const isProd = process.env.NODE_ENV === 'production'
-    const cookieOptions = {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? 'none' : 'lax',
-        // path defaults to '/'
+    let user = await User.findOne({
+        $or: [
+            { googleId: googleUser.sub },
+            { email }
+        ]
+    })
+
+    if (user) {
+        if (!user.googleId) {
+            user.googleId = googleUser.sub
+        }
+        if (user.authProvider !== "google" && !user.password) {
+            user.authProvider = "google"
+        }
+        user.emailVerified = true
+        if (!user.avatar && googleUser.picture) {
+            user.avatar = googleUser.picture
+        }
+        await user.save({ validateBeforeSave: false })
+
+        return sendAuthResponse(res, user._id, "user logged in with Google successfully")
     }
-    
-    return res.status(200)
-        .cookie("accessToken", accessToken, cookieOptions)
-        .cookie("refreshToken", refreshToken, cookieOptions)
-        .json(
-            new ApiResponse(
-                200,
-                {
-                    user: loggedInUser, accessToken, refreshToken
-                },
-                "user logged in successfully"
-            )
-        )
+
+    const fullname = googleUser.name || email.split("@")[0]
+    const username = await generateUniqueUsername(fullname, email)
+
+    user = await User.create({
+        fullname,
+        email,
+        username,
+        avatar: googleUser.picture || "",
+        authProvider: "google",
+        googleId: googleUser.sub,
+        emailVerified: true
+    })
+
+    return sendAuthResponse(res, user._id, "user registered with Google successfully")
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -150,16 +261,11 @@ const logoutUser = asyncHandler(async (req, res) => {
         }
     )
 
-    const isProd = process.env.NODE_ENV === 'production'
-    const cookieOptions = {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? 'none' : 'lax',
-    }
+    const options = cookieOptions()
 
     return res.status(200)
-        .clearCookie("accessToken", cookieOptions)
-        .clearCookie("refreshToken", cookieOptions)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
         .json(new ApiResponse(200, {}, "User Logged Out Successfully"))
 })
 
@@ -167,6 +273,10 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body
 
     const user = await User.findById(req.user?._id)
+
+    if (!user.password) {
+        throw new ApiError(400, "This account uses Google sign-in and does not have a password")
+    }
 
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
     if (!isPasswordCorrect) {
@@ -210,19 +320,14 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Refresh token is expired or used");
     }
 
-    const isProd = process.env.NODE_ENV === 'production'
-    const cookieOptions = {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? 'none' : 'lax',
-    };
+    const options = cookieOptions()
 
     const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
 
     return res
         .status(200)
-        .cookie("accessToken", accessToken, cookieOptions)
-        .cookie("refreshToken", newRefreshToken, cookieOptions)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newRefreshToken, options)
         .json(
             new ApiResponse(200, {
                 accessToken,
@@ -374,6 +479,10 @@ const forgotPassword = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found")
     }
 
+    if (!user.password) {
+        throw new ApiError(400, "This account uses Google sign-in and does not have a password to reset")
+    }
+
     // For now, we'll skip the challenge verification since we need to implement 
     // the OTP verification logic in the backend. The frontend OTP verification
     // should be sufficient for this flow.
@@ -384,6 +493,28 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     return res.status(200).json(
         new ApiResponse(200, {}, "Password reset successfully")
+    )
+})
+
+const checkPasswordResetEligibility = asyncHandler(async (req, res) => {
+    const { email } = req.body
+
+    if (!email) {
+        throw new ApiError(400, "Email is required")
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() }).select("password authProvider")
+
+    if (!user) {
+        throw new ApiError(404, "User not found")
+    }
+
+    if (!user.password) {
+        throw new ApiError(400, "This account uses Google sign-in and does not have a password to reset")
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, { canResetPassword: true }, "Password reset is available")
     )
 })
 
@@ -459,6 +590,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 export {
     registerUser,
     loginUser,
+    googleAuth,
     logoutUser,
     refreshAccessToken,
     changeCurrentPassword,
@@ -467,5 +599,6 @@ export {
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage,
-    forgotPassword
+    forgotPassword,
+    checkPasswordResetEligibility
 };

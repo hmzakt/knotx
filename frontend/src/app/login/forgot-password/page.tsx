@@ -100,7 +100,18 @@ export default function ForgotPassword() {
 
   const onEmailSubmit: SubmitHandler<ForgotPasswordFormData> = async (data) => {
     setError("");
-    await sendOtp(data.email);
+    setIsLoading(true);
+
+    try {
+      await apiClient.post("/users/password-reset-eligibility", {
+        email: data.email,
+      });
+      await sendOtp(data.email);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Password reset is not available for this account.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const onOtpVerify = () => {
