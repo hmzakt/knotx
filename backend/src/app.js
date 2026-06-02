@@ -1,7 +1,6 @@
 import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser";
-import { startSubscriptionExpiryJob } from "./scheduler/subscriptionExpiry.js";
 import helmet from "helmet"
 import compression from "compression"
 
