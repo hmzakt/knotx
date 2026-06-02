@@ -21,7 +21,7 @@
     "framer-motion": "^12.23.16",
     "lucide-react": "^0.542.0",
     "motion": "^12.23.22",
-    "next": "15.4.6",
+    "next": "15.4.10",
     "nodemailer": "^7.0.6",
     "postprocessing": "^6.37.7",
     "react": "19.1.0",
