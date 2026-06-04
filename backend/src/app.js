@@ -76,4 +76,10 @@ app.use("/api/v1/promos", promoRouter);
 app.use("/api/v1/payments", paymentRouter);
 
 
+// lecture delivery
+import lectureRoutes from "./routes/lectures.routes.js";
+
+app.use( "/api/v1/lectures", lectureRoutes );
+
+
 export {app};
