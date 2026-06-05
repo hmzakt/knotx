@@ -15,9 +15,12 @@ const lectureSchema = new mongoose.Schema(
             required: true
         },
         thumbnail: {
-            url: String,
-            required: true
+            url: {
+                type: String,
+                required: true,
+            },
         },
+
         duration: Number,
         order: Number,
 
