@@ -12,12 +12,12 @@ const lectureSchema = new mongoose.Schema(
         course: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Course",
-            required: true
+            // required: true
         },
         thumbnail: {
             url: {
                 type: String,
-                required: true,
+                // required: true,
             },
         },
 
@@ -28,6 +28,11 @@ const lectureSchema = new mongoose.Schema(
             type: Boolean,
             default: false
         },
+
+        videoKey: {
+            type: String,
+            required: true
+        }
     },
     {
         timestamps: true

@@ -1,7 +1,5 @@
-import {
-  S3Client,
-  PutObjectCommand,
-} from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import fs from "fs";
 import path from "path";
@@ -55,3 +53,23 @@ export const uploadDirectoryToR2 =
 
     return `${process.env.R2_PUBLIC_URL}/${keyPrefix}/master.m3u8`;
   };
+
+export const generateSignedPlaybackUrl = async (objectKey) => {
+    const command =
+      new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: objectKey,
+      });
+
+    const signedUrl =
+      await getSignedUrl(
+        s3,
+        command,
+        {
+          expiresIn: 60 * 10, // set to expire in 10 minutes
+        }
+      );
+
+    return signedUrl;
+  };
+  
