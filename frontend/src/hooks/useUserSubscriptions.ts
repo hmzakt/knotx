@@ -18,10 +18,19 @@ interface TestSeries {
   papers: string[];
 }
 
+interface Course {
+  _id: string;
+  title: string;
+  slug: string;
+  thumbnail?: { url?: string };
+  price: number;
+  totalDuration: number;
+}
+
 interface Subscription {
   _id: string;
-  type: 'single-paper' | 'test-series' | 'all-access';
-  itemId?: Paper | TestSeries;
+  type: 'single-paper' | 'test-series' | 'all-access' | 'single-course' | 'all-courses';
+  itemId?: Paper | TestSeries | Course;
   startDate: string;
   endDate: string;
   status: 'active' | 'expired';
@@ -34,8 +43,11 @@ interface UserSubscriptions {
     allAccess: Subscription[];
     singlePapers: Subscription[];
     testSeries: Subscription[];
+    allCourses: Subscription[];
+    singleCourses: Subscription[];
   };
   hasAllAccess: boolean;
+  hasAllCourses: boolean;
   hasAnySubscription: boolean;
 }
 

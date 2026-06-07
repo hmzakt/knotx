@@ -25,7 +25,7 @@ interface RazorpayOptions {
 }
 
 interface PaymentData {
-  type: 'single-paper' | 'test-series' | 'all-access';
+  type: 'single-paper' | 'test-series' | 'all-access' | 'single-course' | 'all-courses';
   itemId?: string;
   baseAmount: number;
   currency?: string;

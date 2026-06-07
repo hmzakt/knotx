@@ -15,7 +15,10 @@ import {
   Search,
   FileText,
   Layers,
+  Video,
 } from "lucide-react";
+import { useCourses, Course } from "@/hooks/useCourses";
+
 
 interface Paper {
   _id: string;
@@ -44,7 +47,7 @@ interface ApiResponse<T> {
   success: boolean;
 }
 
-type TabType = "papers" | "test-series";
+type TabType = "papers" | "test-series" | "courses";
 
 export default function SubscriptionsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("papers");
@@ -59,6 +62,7 @@ export default function SubscriptionsPage() {
   const { subscriptions, loading: loadingSubscriptions, error: subscriptionError, initialized } =
     useSubscription();
   const { papers, testSeries, loading: loadingContent, error: contentError } = useContent();
+  const { courses, loading: loadingCourses } = useCourses();
   const { attempts, loading: loadingAttempts, getAttemptStatus, getAttemptForPaper } =
     useAttempts();
 
@@ -154,8 +158,26 @@ export default function SubscriptionsPage() {
     );
   };
 
-  const filteredPapers = getFilteredPapers();
-  const filteredTestSeries = getFilteredTestSeries();
+  const getFilteredCourses = () => {
+    if (!subscriptions) return [];
+    const subs = subscriptions as any;
+    let available: Course[] = [];
+    if (subs.hasAllCourses) {
+      available = courses;
+    } else {
+      const subscribedIds = (subs.subscriptions?.singleCourses || [])
+        .map((sub: any) => sub.itemId?._id || sub.itemId)
+        .filter(Boolean);
+      available = courses.filter((c) => subscribedIds.includes(c._id));
+    }
+    return available.filter(
+      (c) =>
+        c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.shortDescription || "").toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
+  const filteredCourses = getFilteredCourses();
 
   const fmtSec = (s: number) => {
     if (!s || s <= 0) return '0:00';
@@ -216,7 +238,7 @@ export default function SubscriptionsPage() {
     setRulesAccepted(false);
   };
 
-  if (loadingSubscriptions || !initialized || loadingContent || loadingAttempts) {
+  if (loadingSubscriptions || !initialized || loadingContent || loadingAttempts || loadingCourses) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <LoadingSpinner size="lg" />
@@ -265,6 +287,9 @@ export default function SubscriptionsPage() {
       </div>
     );
   }
+
+  const filteredPapers = getFilteredPapers();
+  const filteredTestSeries = getFilteredTestSeries();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-gray-200">
@@ -331,11 +356,53 @@ export default function SubscriptionsPage() {
           >
             <Layers className="w-4 h-4" /> Test Series
           </button>
+          <button
+            onClick={() => setActiveTab("courses")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "courses"
+                ? "bg-emerald-600 text-white shadow-lg scale-105"
+                : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
+            }`}
+          >
+            <Video className="w-4 h-4" /> Courses
+          </button>
         </div>
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 transition-all">
-          {activeTab === "papers"
+          {activeTab === "courses"
+            ? filteredCourses.length === 0 ? (
+                <div className="col-span-3 text-center py-16 text-gray-500">
+                  <Video className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                  <p>No courses subscribed yet. <button className="text-emerald-400 underline" onClick={() => { start('nav'); router.push('/courses'); }}>Browse courses</button></p>
+                </div>
+              ) : filteredCourses.map((course) => (
+                <div
+                  key={course._id}
+                  className="bg-gray-900/80 rounded-2xl shadow-lg border border-gray-800 hover:border-emerald-600 transition-all overflow-hidden flex flex-col"
+                >
+                  {course.thumbnail?.url && (
+                    <div className="aspect-video relative">
+                      <img src={course.thumbnail.url} alt={course.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="p-6 flex flex-col flex-1">
+                    <h3 className="text-lg font-bold text-white mb-1">{course.title}</h3>
+                    {course.shortDescription && (
+                      <p className="text-gray-400 text-sm mb-4 line-clamp-2">{course.shortDescription}</p>
+                    )}
+                    <div className="mt-auto">
+                      <button
+                        onClick={() => { start('nav'); router.push(`/courses/${course._id}/watch`); }}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Video className="w-4 h-4" /> Continue Watching
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            : activeTab === "papers"
             ? filteredPapers.map((paper) => {
                 const attemptStatus = getAttemptStatus(paper._id);
                 return (

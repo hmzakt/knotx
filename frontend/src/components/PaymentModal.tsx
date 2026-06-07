@@ -10,7 +10,7 @@ interface PaymentModalProps {
   onClose: () => void;
   onPaymentSuccess?: () => void;
   paymentData: {
-    type: 'single-paper' | 'test-series' | 'all-access';
+    type: 'single-paper' | 'test-series' | 'all-access' | 'single-course' | 'all-courses';
     itemId?: string;
     itemName: string;
     itemDescription: string;

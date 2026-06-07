@@ -15,6 +15,8 @@ import {
   Layers,
   CheckCircle2,
   XCircle,
+  Video,
+  Film,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -110,6 +112,20 @@ export default function Dashboard() {
               {subscriptions?.hasAnySubscription ? "Active" : "Inactive"}
             </h3>
             <p className="text-gray-400">Subscription Status</p>
+          </div>
+          <div className="bg-card text-card-foreground p-6 rounded-xl border border-gray-800 shadow hover:border-emerald-500 transition">
+            <Video className="w-8 h-8 text-emerald-400 mb-2" />
+            <h3 className="text-xl font-bold">
+              {subscriptions?.subscriptions?.singleCourses?.length || 0}
+            </h3>
+            <p className="text-gray-400">Course Subs</p>
+          </div>
+          <div className="bg-card text-card-foreground p-6 rounded-xl border border-gray-800 shadow hover:border-emerald-500 transition">
+            <Film className="w-8 h-8 text-amber-400 mb-2" />
+            <h3 className="text-xl font-bold">
+              {subscriptions?.subscriptions?.allCourses?.length || 0}
+            </h3>
+            <p className="text-gray-400">All-Courses Plans</p>
           </div>
         </div>
 
@@ -253,6 +269,65 @@ export default function Dashboard() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Courses — single */}
+            {(subscriptions as any)?.subscriptions?.singleCourses?.length > 0 && (
+              <div className="bg-card text-card-foreground rounded-xl p-6 border border-gray-800 shadow-lg">
+                <h2 className="text-2xl font-semibold mb-4 flex items-center">
+                  <Video className="w-5 h-5 text-emerald-400 mr-2" />
+                  Video Courses
+                </h2>
+                <div className="space-y-4">
+                  {(subscriptions as any).subscriptions.singleCourses.map((subscription: any) => {
+                    const course = subscription.itemId as any;
+                    return (
+                      <div
+                        key={subscription._id}
+                        className="p-4 bg-black rounded-lg flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="font-medium">{course?.title || "Course"}</p>
+                          <p className="text-sm text-gray-400">
+                            Valid until {formatDate(subscription.endDate)}
+                          </p>
+                        </div>
+                        <span className="px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-full text-sm font-medium">
+                          Active
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Courses — all-courses plan */}
+            {(subscriptions as any)?.subscriptions?.allCourses?.length > 0 && (
+              <div className="bg-card text-card-foreground rounded-xl p-6 border border-gray-800 shadow-lg">
+                <h2 className="text-2xl font-semibold mb-4 flex items-center">
+                  <Film className="w-5 h-5 text-amber-400 mr-2" />
+                  All Courses Plan
+                </h2>
+                <div className="space-y-4">
+                  {(subscriptions as any).subscriptions.allCourses.map((subscription: any) => (
+                    <div
+                      key={subscription._id}
+                      className="p-4 bg-black rounded-lg flex justify-between items-center"
+                    >
+                      <div>
+                        <p className="font-medium text-amber-400">All Courses Access</p>
+                        <p className="text-sm text-gray-400">
+                          Valid until {formatDate(subscription.endDate)}
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 bg-amber-900/30 text-amber-400 rounded-full text-sm font-medium">
+                        Active
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

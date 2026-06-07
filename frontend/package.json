@@ -19,6 +19,7 @@
     "clsx": "^2.1.1",
     "emailjs-com": "^3.2.0",
     "framer-motion": "^12.23.16",
+    "hls.js": "^1.6.16",
     "lucide-react": "^0.542.0",
     "motion": "^12.23.22",
     "next": "15.4.10",

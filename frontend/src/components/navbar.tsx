@@ -22,7 +22,9 @@ import {
   Moon,
   Sun,
   Monitor,
+  PlayCircle,
 } from "lucide-react";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -40,8 +42,10 @@ export function Navbar() {
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Explore", href: "/explore", icon: Compass },
+    { name: "Courses", href: "/courses", icon: PlayCircle },
     { name: "Contact", href: "/contact", icon: Mail },
   ];
+
 
   const handleLogout = async () => {
     try {
