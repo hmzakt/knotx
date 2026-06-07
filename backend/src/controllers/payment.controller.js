@@ -5,76 +5,127 @@ import { Subscription } from "../models/subscription.model.js";
 import { User } from "../models/user.model.js";
 import { Paper } from "../models/papers.model.js";
 import { TestSeries } from "../models/testSeries.model.js";
+import { Course } from "../models/courses.model.js";
 import { markPromoUsed } from "./promocode.controller.js";
+
+const BROAD_TYPES = ["all-access", "all-courses"];
+
+const DEFAULT_DURATION = {
+  "single-paper": 30,
+  "test-series": 180,
+  "all-access": 365,
+  "single-course": 365,
+  "all-courses": 365,
+};
 
 /**
  * POST /api/v1/payments/orders
  * Auth: required
- * Body: {
- *   type: "single-paper" | "test-series" | "all-access",
- *   itemId?: string,               // required for single-paper/test-series
- *   baseAmount: number,            // in paise (INR) (e.g., ₹499 => 49900)
- *   currency: "INR",
- *   promoCode?: string,
- *   durationDays?: number          // default fallback for endDate calc
- * }
+ *
+ * Body:
+ *   type: "single-paper" | "test-series" | "all-access" | "single-course" | "all-courses"
+ *   itemId?: string           — required for single-paper, test-series, single-course
+ *   baseAmount: number        — in paise (e.g. ₹499 → 49900)
+ *   currency: "INR"           — default INR
+ *   promoCode?: string
+ *   durationDays?: number     — ignored; server derives duration from type
  */
 export const createRazorpayOrder = async (req, res) => {
   try {
-    // Check if Razorpay is available
     if (!razorpay) {
       return res.status(503).json({
         success: false,
-        message: "Payment service is currently unavailable. Please try again later."
+        message: "Payment service is currently unavailable.",
       });
     }
 
     const user = req.user;
-    let { type, itemId, baseAmount, currency = "INR", promoCode, durationDays = 30 } = req.body;
+    let {
+      type,
+      itemId,
+      baseAmount,
+      currency = "INR",
+      promoCode,
+    } = req.body;
 
-    // Normalize type to expected enum
-    if (type === 'paper') type = 'single-paper';
+    if (type === "paper") type = "single-paper";
 
-    // basic validation
-    if (!type) return res.status(400).json({ success: false, message: "type is required" });
-    if (type !== "all-access" && !itemId)
-      return res.status(400).json({ success: false, message: "itemId is required for this type" });
-    if (!baseAmount || baseAmount < 100)
-      return res.status(400).json({ success: false, message: "baseAmount (>=100) is required (in paise)" });
-
-    // ensure referenced item exists when needed
-    if (type === "single-paper") {
-      const exists = await Paper.exists({ _id: itemId });
-      if (!exists) return res.status(404).json({ success: false, message: "Paper not found" });
-    } else if (type === "test-series") {
-      const exists = await TestSeries.exists({ _id: itemId });
-      if (!exists) return res.status(404).json({ success: false, message: "Test series not found" });
+    // ── Validation ────────────────────────────────────────────────
+    if (!type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "type is required" });
+    }
+    if (!DEFAULT_DURATION[type]) {
+      return res
+        .status(400)
+        .json({ success: false, message: `Unknown subscription type: ${type}` });
+    }
+    if (!BROAD_TYPES.includes(type) && !itemId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "itemId is required for this type" });
+    }
+    if (!baseAmount || baseAmount < 100) {
+      return res.status(400).json({
+        success: false,
+        message: "baseAmount (≥100 paise) is required",
+      });
     }
 
-    // apply discount if promo valid
-    let finalAmount = baseAmount;
-    if (promoCode) {
-      // we could call the validatePromoCode controller, but simpler to re-check here:
-      const promoResp = await fetch(`${req.protocol}://${req.get("host")}/api/v1/promos/validate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: req.headers.authorization || "" },
-        body: JSON.stringify({ code: promoCode })
-      }).then(r => r.json()).catch(() => ({ success: false }));
-
-      if (promoResp?.success && promoResp.discountPercent) {
-        const discount = Math.floor((finalAmount * promoResp.discountPercent) / 100);
-        finalAmount = Math.max(finalAmount - discount, 100); // minimum ₹1 (100 paise)
+    // ── Item existence check ──────────────────────────────────────
+    if (type === "single-paper") {
+      const exists = await Paper.exists({ _id: itemId });
+      if (!exists) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Paper not found" });
+      }
+    } else if (type === "test-series") {
+      const exists = await TestSeries.exists({ _id: itemId });
+      if (!exists) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Test series not found" });
+      }
+    } else if (type === "single-course") {
+      const exists = await Course.exists({ _id: itemId });
+      if (!exists) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Course not found" });
       }
     }
 
-    // Normalize duration server-side by type to ensure DB correctness
-    let normalizedDuration = Number(durationDays || 30);
-    if (!Number.isFinite(normalizedDuration) || normalizedDuration <= 0) normalizedDuration = 30;
-    if (type === 'single-paper') normalizedDuration = 30;
-    else if (type === 'test-series') normalizedDuration = 180;
-    else if (type === 'all-access') normalizedDuration = 365;
+    // ── Apply promo discount ──────────────────────────────────────
+    let finalAmount = baseAmount;
+    if (promoCode) {
+      const promoResp = await fetch(
+        `${req.protocol}://${req.get("host")}/api/v1/promos/validate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: req.headers.authorization || "",
+          },
+          body: JSON.stringify({ code: promoCode }),
+        }
+      )
+        .then((r) => r.json())
+        .catch(() => ({ success: false }));
 
-    // create Razorpay order
+      if (promoResp?.success && promoResp.discountPercent) {
+        const discount = Math.floor(
+          (finalAmount * promoResp.discountPercent) / 100
+        );
+        finalAmount = Math.max(finalAmount - discount, 100);
+      }
+    }
+
+    // Server-side duration (not trusted from client)
+    const normalizedDuration = DEFAULT_DURATION[type];
+
+    // ── Create Razorpay order ─────────────────────────────────────
     const order = await razorpay.orders.create({
       amount: finalAmount,
       currency,
@@ -84,91 +135,109 @@ export const createRazorpayOrder = async (req, res) => {
         type,
         itemId: itemId || "",
         promoCode: promoCode || "",
-        durationDays: String(normalizedDuration)
-      }
+        durationDays: String(normalizedDuration),
+      },
     });
 
-    // send order + publishable key to frontend (so they can open Razorpay Checkout)
     return res.json({
       success: true,
       keyId: process.env.RAZORPAY_KEY_ID,
-      order
+      order,
     });
   } catch (err) {
     console.error("createRazorpayOrder error:", err);
-    return res.status(500).json({ success: false, message: err.message });
+    return res
+      .status(500)
+      .json({ success: false, message: err.message });
   }
 };
 
 /**
  * POST /api/v1/payments/verify
- * Auth: required (if you want; optional because verification uses signature)
+ * Verifies Razorpay signature, then creates the Subscription and marks promo used.
+ *
  * Body: { razorpay_order_id, razorpay_payment_id, razorpay_signature }
- * Verifies signature, then creates Subscription and marks promo used.
- * This is a fallback to webhooks or can be your primary completion path.
  */
 export const verifyRazorpayPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
+
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({ success: false, message: "Missing payment verification fields" });
+      return res.status(400).json({
+        success: false,
+        message: "Missing payment verification fields",
+      });
     }
 
-    // verify signature
+    // ── Verify HMAC signature ─────────────────────────────────────
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expected = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
+      .update(body)
       .digest("hex");
 
     if (expected !== razorpay_signature) {
-      return res.status(400).json({ success: false, message: "Invalid signature" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid payment signature" });
     }
 
-    // fetch order to read notes metadata (userId, type, itemId, promoCode, durationDays)
+    // ── Fetch order notes (server-authoritative metadata) ─────────
     const order = await razorpay.orders.fetch(razorpay_order_id);
     const notes = order?.notes || {};
     const userId = notes.userId;
     const type = notes.type;
     const itemId = notes.itemId || null;
     const promoCode = notes.promoCode || "";
-    const durationDays = Number(notes.durationDays || 30);
+    const durationDays = Number(notes.durationDays || DEFAULT_DURATION[type] || 30);
 
-    // create subscription
+    // ── Create subscription ───────────────────────────────────────
     const start = new Date();
     const end = new Date(start.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
     const subscription = await Subscription.create({
       userId,
       type,
-      itemId: type === "all-access" ? null : itemId,
+      itemId: BROAD_TYPES.includes(type) ? null : itemId,
       startDate: start,
       endDate: end,
-      status: "active"
+      status: "active",
     });
 
-    // Best-effort linking to user's subscriptions array if such linkage is used elsewhere
+    // Link to user.subscriptions array (best-effort)
     try {
-      await User.findByIdAndUpdate(userId, {
-        $addToSet: { subscriptions: subscription._id }
-      }, { new: false });
+      await User.findByIdAndUpdate(
+        userId,
+        { $addToSet: { subscriptions: subscription._id } },
+        { new: false }
+      );
     } catch (linkErr) {
-      console.warn("Could not link subscription to user.subscriptions array:", linkErr?.message);
+      console.warn("Could not link subscription to user:", linkErr?.message);
     }
 
-    // mark promo usage
+    // Mark promo code used (best-effort)
     if (promoCode) {
       await markPromoUsed({
         code: promoCode,
         userId,
         orderId: razorpay_order_id,
-        paymentId: razorpay_payment_id
-      });
+        paymentId: razorpay_payment_id,
+      }).catch((e) => console.warn("markPromoUsed failed:", e.message));
     }
 
-    return res.json({ success: true, message: "Payment verified, subscription active", subscription });
+    return res.json({
+      success: true,
+      message: "Payment verified, subscription active",
+      subscription,
+    });
   } catch (err) {
     console.error("verifyRazorpayPayment error:", err);
-    return res.status(500).json({ success: false, message: err.message });
+    return res
+      .status(500)
+      .json({ success: false, message: err.message });
   }
 };

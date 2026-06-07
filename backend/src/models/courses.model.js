@@ -84,6 +84,11 @@ const courseSchema = new mongoose.Schema(
       default: 0,
     },
 
+    totalDuration: {
+      type: Number,
+      default: 0,
+    },
+
     enrolledStudents: [
       {
         type: mongoose.Schema.Types.ObjectId,

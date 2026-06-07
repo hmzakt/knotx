@@ -78,8 +78,10 @@ app.use("/api/v1/payments", paymentRouter);
 
 // lecture delivery
 import lectureRoutes from "./routes/lectures.routes.js";
+import coursesRouter from "./routes/courses.routes.js";
 
 app.use( "/api/v1/lectures", lectureRoutes );
+app.use( "/api/v1/courses", coursesRouter );
 
 
 export {app};
