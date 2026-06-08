@@ -1,43 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* =============================================
+   AVIATION DESIGN SYSTEM — CSS CUSTOM PROPERTIES
+   ============================================= */
+
 @layer base {
   :root {
+    /* ---- Core tokens ---- */
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
-
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-
     --border: 240 5.9% 90%;
-
     --primary: 220 80% 55%;
     --primary-foreground: 0 0% 100%;
+
+    /* ---- Aviation palette — Light Mode ---- */
+    --av-bg:           #f4f1eb;      /* Warm paper */
+    --av-bg-alt:       #eae6dc;      /* Slightly darker paper */
+    --av-ink:          #0d1117;      /* Near-black ink */
+    --av-ink-muted:    #4a4e5a;      /* Muted ink */
+    --av-amber:        #f0b429;      /* Nav light amber */
+    --av-amber-dark:   #c8920a;      /* Deep amber */
+    --av-cobalt:       #0a2a5e;      /* Cobalt blue */
+    --av-cobalt-light: #1a4a9e;      /* Lighter cobalt */
+    --av-signal:       #e63946;      /* Signal red */
+    --av-white:        #ffffff;
+    --av-border:       rgba(13, 17, 23, 0.12);
+    --av-card-bg:      #ffffff;
+    --av-card-border:  rgba(13, 17, 23, 0.15);
+
+    /* ---- Navbar ---- */
+    --nav-bg-transparent: rgba(244, 241, 235, 0);
+    --nav-bg-solid:       rgba(244, 241, 235, 0.96);
+    --nav-border:         rgba(10, 42, 94, 0.15);
+    --nav-text:           #0d1117;
+    --nav-text-muted:     #4a4e5a;
+
+    /* ---- Footer (always dark, regardless of theme) ---- */
+    --av-footer-bg:       #07080f;
+    --av-footer-text:     rgba(244, 241, 235, 0.55);
+    --av-footer-border:   rgba(255, 255, 255, 0.07);
+    --av-footer-heading:  #f0b429;
   }
 
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
-
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-
     --border: 240 3.7% 25%;
-
     --primary: 220 80% 65%;
     --primary-foreground: 0 0% 100%;
+
+    /* ---- Aviation palette — Dark Mode ---- */
+    --av-bg:           #070c18;      /* Midnight sky */
+    --av-bg-alt:       #0d1525;      /* Slightly lighter midnight */
+    --av-ink:          #e8eef7;      /* Cloud white */
+    --av-ink-muted:    #8a9bb5;      /* Muted cloud */
+    --av-amber:        #f0b429;      /* Nav light amber (same) */
+    --av-amber-dark:   #ffd166;      /* Bright amber */
+    --av-cobalt:       #4a8fef;      /* Electric cobalt */
+    --av-cobalt-light: #7eb3ff;      /* Light cobalt */
+    --av-signal:       #e63946;      /* Signal red (same) */
+    --av-white:        #ffffff;
+    --av-border:       rgba(232, 238, 247, 0.1);
+    --av-card-bg:      #0d1525;
+    --av-card-border:  rgba(240, 180, 41, 0.18);
+
+    /* ---- Navbar ---- */
+    --nav-bg-transparent: rgba(7, 12, 24, 0);
+    --nav-bg-solid:       rgba(7, 12, 24, 0.94);
+    --nav-border:         rgba(240, 180, 41, 0.2);
+    --nav-text:           #e8eef7;
+    --nav-text-muted:     #8a9bb5;
+
+    /* ---- Footer (same always-dark in dark mode too) ---- */
+    --av-footer-bg:       #07080f;
+    --av-footer-text:     rgba(244, 241, 235, 0.55);
+    --av-footer-border:   rgba(255, 255, 255, 0.07);
+    --av-footer-heading:  #f0b429;
   }
 }
-
 
 @custom-variant dark (&:is(.dark *));
 
@@ -150,21 +204,408 @@
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
+/* =============================================
+   BASE LAYER
+   ============================================= */
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', 'Geist Sans', sans-serif;
   }
-  
-  /* Theme transition for smooth switching */
-  * {
-    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+
+  /* Smooth theme transitions */
+  *,
+  *::before,
+  *::after {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease;
   }
-  
-  /* Ensure navbar adapts to theme changes */
-  nav {
-    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+
+  /* Prevent transition on scroll animations */
+  .no-transition {
+    transition: none !important;
+  }
+}
+
+/* =============================================
+   KEYFRAME ANIMATIONS
+   ============================================= */
+
+/* Ticker / marquee scroll */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Slow float for hero decorative elements */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-12px) rotate(1deg); }
+}
+
+/* Plane fly-across */
+@keyframes plane-fly {
+  0%   { transform: translateX(-120px) translateY(0px); opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { transform: translateX(calc(100vw + 120px)) translateY(-40px); opacity: 0; }
+}
+
+/* Altitude line grow */
+@keyframes line-grow {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+/* Fade up reveal */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Pulse amber glow */
+@keyframes amber-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 180, 41, 0.3); }
+  50%       { box-shadow: 0 0 0 12px rgba(240, 180, 41, 0); }
+}
+
+/* Grid lines shimmer */
+@keyframes grid-shimmer {
+  0%   { opacity: 0.03; }
+  50%  { opacity: 0.07; }
+  100% { opacity: 0.03; }
+}
+
+/* Slow nebula drift for hero depth */
+@keyframes nebula-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.85; }
+  50%       { transform: translate(2%, -1.5%) scale(1.04); opacity: 1; }
+}
+
+/* Subtle star twinkle (dark hero) */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 1; }
+}
+
+/* =============================================
+   UTILITY CLASSES
+   ============================================= */
+
+/* Aviation display font */
+.font-display {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.font-display-black {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* Ticker band */
+.ticker-track {
+  animation: ticker-scroll 28s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* Plane animation */
+.plane-animate {
+  animation: plane-fly 8s ease-in-out 1.2s forwards;
+  position: absolute;
+}
+
+/* Floating element */
+.float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+/* Amber glow button */
+.btn-amber-glow {
+  animation: amber-pulse 2.5s ease-in-out infinite;
+}
+
+/* Ruled line grow animation */
+.line-grow {
+  animation: line-grow 0.8s ease-out forwards;
+}
+
+/* Editorial ink border */
+.ink-border {
+  border: 2px solid var(--av-ink);
+}
+
+.dark .ink-border {
+  border-color: var(--av-border);
+}
+
+/* Hero grid overlay */
+.hero-grid-light {
+  background-image:
+    linear-gradient(rgba(10, 42, 94, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 42, 94, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: grid-shimmer 6s ease-in-out infinite;
+}
+
+.hero-grid-dark {
+  background-image:
+    linear-gradient(rgba(240, 180, 41, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240, 180, 41, 0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: grid-shimmer 6s ease-in-out infinite;
+}
+
+/* Highlight text with amber underline */
+.text-highlight-amber {
+  position: relative;
+  display: inline-block;
+}
+
+.text-highlight-amber::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: -4px;
+  right: -4px;
+  height: 40%;
+  background: var(--av-amber);
+  z-index: -1;
+  opacity: 0.35;
+}
+
+/* Amber text bg highlight (Broadside-style) */
+.highlight-box-amber {
+  background-color: var(--av-amber);
+  color: #0d1117;
+  padding: 0 8px;
+  display: inline;
+}
+
+/* Cobalt text bg highlight */
+.highlight-box-cobalt {
+  background-color: var(--av-cobalt);
+  color: #ffffff;
+  padding: 0 8px;
+  display: inline;
+}
+
+/* Signal red text bg highlight */
+.highlight-box-signal {
+  background-color: var(--av-signal);
+  color: #ffffff;
+  padding: 0 8px;
+  display: inline;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--av-bg); }
+::-webkit-scrollbar-thumb { background: var(--av-amber); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--av-amber-dark); }
+
+/* =============================================
+   HERO BACKGROUNDS
+   ============================================= */
+
+/* Film grain overlay — adds premium texture */
+.hero-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+.dark .hero-grain {
+  opacity: 0.06;
+}
+
+/* Ambient glow orbs — parallax-friendly layers */
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  animation: nebula-drift 14s ease-in-out infinite;
+}
+
+.hero-orb-amber {
+  width: min(55vw, 480px);
+  height: min(55vw, 480px);
+  top: -8%;
+  right: -5%;
+  background: radial-gradient(circle, rgba(240, 180, 41, 0.22) 0%, transparent 70%);
+}
+
+.hero-orb-cobalt {
+  width: min(45vw, 400px);
+  height: min(45vw, 400px);
+  bottom: 10%;
+  left: -8%;
+  background: radial-gradient(circle, rgba(10, 42, 94, 0.14) 0%, transparent 70%);
+  animation-delay: -5s;
+}
+
+.dark .hero-orb-cobalt {
+  background: radial-gradient(circle, rgba(74, 143, 239, 0.16) 0%, transparent 70%);
+}
+
+/* Twinkling star accent layer (dark mode) */
+.hero-stars-twinkle {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.9) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 20%, rgba(255,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 70%, rgba(255,255,255,0.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 55%, rgba(255,255,255,0.6) 0%, transparent 100%);
+  animation: star-twinkle 4s ease-in-out infinite alternate;
+}
+
+/* ── DARK MODE: Cinematic Night Sky ── */
+.hero-bg-dark {
+  background:
+    /* Stars layer 1 – tiny bright dots */
+    radial-gradient(0.8px 0.8px at 12% 14%, rgba(255,255,255,0.85) 0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 27% 8%,  rgba(255,255,255,0.7)  0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 43% 22%, rgba(255,255,255,0.9)  0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 61% 6%,  rgba(255,255,255,0.6)  0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 78% 19%, rgba(255,255,255,0.8)  0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 91% 11%, rgba(255,255,255,0.75) 0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 5%  38%, rgba(255,255,255,0.5)  0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 18% 45%, rgba(255,255,255,0.85) 0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 35% 33%, rgba(255,255,255,0.6)  0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 52% 41%, rgba(255,255,255,0.7)  0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 69% 28%, rgba(255,255,255,0.9)  0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 84% 36%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(0.8px 0.8px at 97% 44%, rgba(255,255,255,0.8)  0%, transparent 100%),
+    /* Stars layer 2 – medium dots */
+    radial-gradient(1.2px 1.2px at 8%  62%, rgba(255,255,255,0.6)  0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 22% 71%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 39% 58%, rgba(255,255,255,0.7)  0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 56% 67%, rgba(255,255,255,0.5)  0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 74% 54%, rgba(255,255,255,0.8)  0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 88% 63%, rgba(255,255,255,0.6)  0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 3%  79%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 47% 82%, rgba(255,255,255,0.7)  0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 65% 88%, rgba(255,255,255,0.5)  0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 93% 77%, rgba(255,255,255,0.65) 0%, transparent 100%),
+    /* Amber nebula glow – top right */
+    radial-gradient(ellipse 55% 40% at 85% 10%, rgba(240,180,41,0.12) 0%, transparent 70%),
+    /* Cobalt nebula glow – left */
+    radial-gradient(ellipse 45% 50% at 10% 30%, rgba(74,143,239,0.1) 0%, transparent 70%),
+    /* Signal red hint – horizon */
+    radial-gradient(ellipse 60% 20% at 50% 95%, rgba(230,57,70,0.07) 0%, transparent 100%),
+    /* Base sky gradient */
+    linear-gradient(180deg, #020510 0%, #070c18 40%, #0a1428 80%, #0d1a2e 100%);
+}
+
+/* ── LIGHT MODE: Cream Paper Editorial ── */
+.hero-bg-light {
+  background:
+    /* Dot grid pattern */
+    radial-gradient(circle, rgba(10,42,94,0.12) 1px, transparent 1px),
+    /* Warm amber glow – top right */
+    radial-gradient(ellipse 50% 40% at 85% 8%, rgba(240,180,41,0.15) 0%, transparent 65%),
+    /* Cobalt hint – left */
+    radial-gradient(ellipse 40% 45% at 8% 25%, rgba(10,42,94,0.07) 0%, transparent 70%),
+    /* Base cream paper */
+    linear-gradient(160deg, #f8f5ed 0%, #f4f1eb 60%, #ede9df 100%);
+  background-size: 32px 32px, 100% 100%, 100% 100%, 100% 100%;
+}
+
+/* Cockpit image overlay – used as a section visual */
+.cockpit-img-overlay {
+  position: absolute;
+  inset: -8% 0;
+  background-image: url('/cockpit.png');
+  background-size: cover;
+  background-position: center 20%;
+  background-repeat: no-repeat;
+  will-change: transform;
+}
+
+@media (max-width: 768px) {
+  .cockpit-img-overlay {
+    background-position: center center;
+    inset: -4% 0;
+  }
+}
+
+/* Cockpit tint for dark mode – deep navy over the image */
+.cockpit-tint-dark {
+  background: linear-gradient(
+    135deg,
+    rgba(2, 5, 16, 0.88) 0%,
+    rgba(7, 12, 24, 0.72) 50%,
+    rgba(10, 20, 40, 0.55) 100%
+  );
+}
+
+/* Cockpit tint for light mode – warm cream over the image */
+.cockpit-tint-light {
+  background: linear-gradient(
+    135deg,
+    rgba(244, 241, 235, 0.92) 0%,
+    rgba(244, 241, 235, 0.78) 50%,
+    rgba(244, 241, 235, 0.5) 100%
+  );
+}
+
+/* Cloud layer – sits atop the starfield for depth */
+@keyframes cloud-drift {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(60px); }
+}
+
+.cloud-layer {
+  animation: cloud-drift 18s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* ─── Plane fly-across (CSS, reliable across all viewport widths) ─── */
+@keyframes plane-fly {
+  0%   { transform: translateX(-100px) translateY(0px);   opacity: 0; }
+  4%   { opacity: 1; }
+  93%  { opacity: 1; }
+  100% { transform: translateX(calc(100vw + 120px)) translateY(-45px); opacity: 0; }
+}
+
+.plane-animate {
+  position: absolute;
+  animation: plane-fly 9s cubic-bezier(0.4, 0, 0.2, 1) 1.4s 1 forwards;
+  pointer-events: none;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track,
+  .plane-animate,
+  .cloud-layer,
+  .hero-orb,
+  .hero-stars-twinkle,
+  .hero-grid-light,
+  .hero-grid-dark,
+  .btn-amber-glow {
+    animation: none !important;
+  }
+
+  .plane-animate {
+    display: none;
   }
 }
