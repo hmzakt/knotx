@@ -20,7 +20,7 @@ interface PaymentVerification {
 }
 
 interface PaymentData {
-  type: 'single-paper' | 'test-series' | 'all-access';
+  type: 'single-paper' | 'test-series' | 'all-access' | 'single-course' | 'all-courses';
   itemId?: string;
   baseAmount: number;
   currency?: string;
@@ -53,7 +53,7 @@ export const usePayment = (): UsePaymentReturn => {
       if (!data.type) {
         throw new Error('Payment type is required');
       }
-      if (data.type !== 'all-access' && !data.itemId) {
+      if (data.type !== 'all-access' && data.type !== 'all-courses' && !data.itemId) {
         throw new Error('Item ID is required for this payment type');
       }
       if (!data.baseAmount || data.baseAmount < 100) {

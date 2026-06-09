@@ -32,7 +32,7 @@ export default function VideoPlayer({ hlsUrl, title, onError, autoPlay = false }
   const [quality, setQuality] = useState<"auto" | "720p" | "360p">("auto");
   const [showQuality, setShowQuality] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Load HLS
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function VideoPlayer({ hlsUrl, title, onError, autoPlay = false }
       if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = hlsUrl;
         video.addEventListener("loadedmetadata", () => {
-          if (autoPlay) video.play().catch(() => {});
+          if (autoPlay) video.play().catch(() => { });
         });
         return;
       }
@@ -67,7 +67,7 @@ export default function VideoPlayer({ hlsUrl, title, onError, autoPlay = false }
       hls.loadSource(hlsUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        if (autoPlay) video.play().catch(() => {});
+        if (autoPlay) video.play().catch(() => { });
       });
       hls.on(Hls.Events.ERROR, (_: any, data: any) => {
         if (data.fatal) {
@@ -139,7 +139,7 @@ export default function VideoPlayer({ hlsUrl, title, onError, autoPlay = false }
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) v.play().catch(() => {});
+    if (v.paused) v.play().catch(() => { });
     else v.pause();
   };
 
@@ -161,7 +161,7 @@ export default function VideoPlayer({ hlsUrl, title, onError, autoPlay = false }
     const el = containerRef.current;
     if (!el) return;
     if (!document.fullscreenElement) {
-      el.requestFullscreen().catch(() => {});
+      el.requestFullscreen().catch(() => { });
       setIsFullscreen(true);
     } else {
       document.exitFullscreen();
