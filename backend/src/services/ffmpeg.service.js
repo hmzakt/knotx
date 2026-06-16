@@ -38,31 +38,32 @@ export const convertToHLS = async (inputPath, outputDir) => {
       "-y",
       "-i", inputPath,
 
-      // Split video into two streams for parallel encoding
-      "-filter_complex", "[0:v]split=2[v1][v2]",
+      // Split and scale both renditions in one filter graph (cannot combine with -vf)
+      "-filter_complex",
+      "[0:v]split=2[v720][v360];[v720]scale=-2:720[v720out];[v360]scale=-2:360[v360out]",
 
       // 720p rendition
-      "-map", "[v1]", "-map", "0:a",
-      "-c:v:0", "libx264", "-preset", "fast", "-crf", "23",
-      "-b:v:0", "2500k", "-maxrate:v:0", "2675k", "-bufsize:v:0", "5000k",
-      "-vf:0", "scale=-2:720",
-      "-c:a:0", "aac", "-b:a:0", "128k", "-ar:0", "48000",
+      "-map", "[v720out]", "-map", "0:a?",
+      "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+      "-b:v", "2500k", "-maxrate", "2675k", "-bufsize", "5000k",
+      "-c:a", "aac", "-b:a", "128k", "-ar", "48000",
       "-hls_time", "6",
       "-hls_list_size", "0",
       "-hls_segment_filename", path.join(outputDir, "720p_%03d.ts"),
       "-hls_flags", "independent_segments",
+      "-f", "hls",
       path.join(outputDir, "720p.m3u8"),
 
       // 360p rendition
-      "-map", "[v2]", "-map", "0:a",
-      "-c:v:1", "libx264", "-preset", "fast", "-crf", "28",
-      "-b:v:1", "800k", "-maxrate:v:1", "856k", "-bufsize:v:1", "1600k",
-      "-vf:1", "scale=-2:360",
-      "-c:a:1", "aac", "-b:a:1", "96k", "-ar:1", "48000",
+      "-map", "[v360out]", "-map", "0:a?",
+      "-c:v", "libx264", "-preset", "fast", "-crf", "28",
+      "-b:v", "800k", "-maxrate", "856k", "-bufsize", "1600k",
+      "-c:a", "aac", "-b:a", "96k", "-ar", "48000",
       "-hls_time", "6",
       "-hls_list_size", "0",
       "-hls_segment_filename", path.join(outputDir, "360p_%03d.ts"),
       "-hls_flags", "independent_segments",
+      "-f", "hls",
       path.join(outputDir, "360p.m3u8"),
     ];
 

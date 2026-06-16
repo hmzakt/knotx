@@ -22,6 +22,7 @@ interface Lecture {
   order: number;
   section: string | null;
   isPreviewFree: boolean;
+  thumbnail?: { url?: string };
 }
 
 interface Section {
@@ -346,13 +347,17 @@ export default function WatchPage() {
                               : "opacity-50 cursor-not-allowed"
                           }`}
                         >
-                          <div className="flex-shrink-0 mt-0.5">
-                            {isActive ? (
-                              <Play className="w-4 h-4 text-emerald-400" fill="currentColor" />
-                            ) : canWatch ? (
-                              <Play className="w-4 h-4 text-gray-500" />
+                          <div className="w-14 h-9 rounded overflow-hidden bg-gray-800 flex-shrink-0 mt-0.5">
+                            {lecture.thumbnail?.url ? (
+                              <img src={lecture.thumbnail.url} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <Lock className="w-4 h-4 text-gray-600" />
+                              <div className="w-full h-full flex items-center justify-center">
+                                {isActive ? (
+                                  <Play className="w-3 h-3 text-emerald-400" fill="currentColor" />
+                                ) : (
+                                  <Play className="w-3 h-3 text-gray-600" />
+                                )}
+                              </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -368,6 +373,9 @@ export default function WatchPage() {
                               </span>
                             )}
                           </div>
+                          {!canWatch && !lecture.thumbnail?.url && (
+                            <Lock className="w-3 h-3 text-gray-600 flex-shrink-0 mt-1" />
+                          )}
                         </button>
                       );
                     })}
@@ -393,13 +401,19 @@ export default function WatchPage() {
                       : "opacity-50 cursor-not-allowed"
                   }`}
                 >
-                  <div className="flex-shrink-0 mt-0.5">
-                    {isActive ? (
-                      <Play className="w-4 h-4 text-emerald-400" fill="currentColor" />
-                    ) : canWatch ? (
-                      <Play className="w-4 h-4 text-gray-500" />
+                  <div className="w-14 h-9 rounded overflow-hidden bg-gray-800 flex-shrink-0 mt-0.5">
+                    {lecture.thumbnail?.url ? (
+                      <img src={lecture.thumbnail.url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <Lock className="w-4 h-4 text-gray-600" />
+                      <div className="w-full h-full flex items-center justify-center">
+                        {isActive ? (
+                          <Play className="w-3 h-3 text-emerald-400" fill="currentColor" />
+                        ) : canWatch ? (
+                          <Play className="w-3 h-3 text-gray-500" />
+                        ) : (
+                          <Lock className="w-3 h-3 text-gray-600" />
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">

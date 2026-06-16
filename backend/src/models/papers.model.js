@@ -6,7 +6,7 @@ const paperSchema = new Schema({
         required: true,
         trim: true
     },
-    subject: {
+    domain: {
         type: String,
         required: true,
         trim: true

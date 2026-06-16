@@ -1,15 +1,18 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { isAdmin } from "../middlewares/admin.middleware.js";
+import { uploadImage } from "../middlewares/multer.middelware.js";
 import {
   listCourses,
   getCourseDetails,
   listCoursesAdmin,
+  getCourseDetailsAdmin,
   createCourse,
   updateCourse,
   deleteCourse,
   publishCourse,
   unpublishCourse,
+  uploadCourseThumbnail,
 } from "../controllers/courses.controller.js";
 import {
   createSection,
@@ -25,12 +28,20 @@ router.get("/", listCourses);
 
 // Admin-only list must come before /:id to avoid param match
 router.get("/admin/all", verifyJWT, isAdmin, listCoursesAdmin);
+router.get("/admin/:id", verifyJWT, isAdmin, getCourseDetailsAdmin);
 
 router.get("/:id", getCourseDetails);
 
 // Admin — course CRUD
 router.post("/", verifyJWT, isAdmin, createCourse);
 router.put("/:id", verifyJWT, isAdmin, updateCourse);
+router.patch(
+  "/:id/thumbnail",
+  verifyJWT,
+  isAdmin,
+  uploadImage.single("thumbnail"),
+  uploadCourseThumbnail
+);
 router.delete("/:id", verifyJWT, isAdmin, deleteCourse);
 router.patch("/:id/publish", verifyJWT, isAdmin, publishCourse);
 router.patch("/:id/unpublish", verifyJWT, isAdmin, unpublishCourse);

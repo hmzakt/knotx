@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { uploadVideo } from "../middlewares/multer.middelware.js";
+import { uploadVideo, uploadImage } from "../middlewares/multer.middelware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { isAdmin } from "../middlewares/admin.middleware.js";
 import { gateCourseLecture } from "../middlewares/courseAccess.middleware.js";
@@ -9,6 +9,7 @@ import {
   streamHLSContent,
   deleteLecture,
   updateLecture,
+  uploadLectureThumbnail,
   getLecturesByCourse,
 } from "../controllers/lectures.controller.js";
 
@@ -29,6 +30,13 @@ router.post(
   isAdmin,
   uploadVideo.single("video"),
   uploadLecture
+);
+router.patch(
+  "/:id/thumbnail",
+  verifyJWT,
+  isAdmin,
+  uploadImage.single("thumbnail"),
+  uploadLectureThumbnail
 );
 router.patch("/:id", verifyJWT, isAdmin, updateLecture);
 router.delete("/:id", verifyJWT, isAdmin, deleteLecture);

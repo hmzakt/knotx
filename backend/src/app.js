@@ -12,7 +12,10 @@ const app = express()
 app.set('trust proxy', 1);
 
 // app.use(cors())
-app.use(helmet());
+
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 
 // Allow multiple origins via comma-separated CORS_ORIGIN; default to localhost for dev
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
@@ -28,7 +31,7 @@ app.use(cors({
         return callback(new Error(`CORS: Origin ${origin} not allowed`));
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }))
 app.use(compression());

@@ -2,6 +2,8 @@ import { Course } from "../models/courses.model.js";
 import { Section } from "../models/courseSections.model.js";
 import { Lecture } from "../models/lectures.model.js";
 import { deleteR2Prefix } from "../services/r2.service.js";
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+import fs from "fs-extra";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 
@@ -37,13 +39,13 @@ export const getCourseDetails = async (req, res) => {
         options: { sort: { order: 1 } },
         populate: {
           path: "lectures",
-          select: "title description duration order isPreviewFree",
+          select: "title description duration order isPreviewFree thumbnail",
           options: { sort: { order: 1 } },
         },
       })
       .populate({
-        path: "lectures", // flat lectures (unsectioned)
-        select: "title description duration order isPreviewFree",
+        path: "lectures",
+        select: "title description duration order isPreviewFree thumbnail",
         options: { sort: { order: 1 } },
       })
       .lean();
@@ -71,7 +73,7 @@ export const listCoursesAdmin = async (req, res) => {
   try {
     const courses = await Course.find({})
       .select(
-        "title slug isPublished price isFree totalDuration totalEnrollments createdAt"
+        "title slug isPublished price isFree totalDuration thumbnail createdAt"
       )
       .populate("instructor", "fullname")
       .sort({ createdAt: -1 })
@@ -82,6 +84,90 @@ export const listCoursesAdmin = async (req, res) => {
       .json(new ApiResponse(200, courses, "All courses listed"));
   } catch (err) {
     console.error("listCoursesAdmin error:", err);
+    return res.status(500).json(new ApiError(500, "Server error"));
+  }
+};
+
+/**
+ * GET /api/v1/courses/admin/:id
+ * Admin — full course with sections + lectures (includes unpublished).
+ */
+export const getCourseDetailsAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const course = await Course.findById(id)
+      .populate("instructor", "fullname email")
+      .populate({
+        path: "sections",
+        options: { sort: { order: 1 } },
+        populate: {
+          path: "lectures",
+          options: { sort: { order: 1 } },
+        },
+      })
+      .populate({
+        path: "lectures",
+        options: { sort: { order: 1 } },
+      })
+      .lean();
+
+    if (!course) {
+      return res.status(404).json(new ApiError(404, "Course not found"));
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, course, "Course fetched"));
+  } catch (err) {
+    console.error("getCourseDetailsAdmin error:", err);
+    return res.status(500).json(new ApiError(500, "Server error"));
+  }
+};
+
+/**
+ * PATCH /api/v1/courses/:id/thumbnail
+ * Admin — upload or replace course thumbnail (multipart field: thumbnail).
+ */
+export const uploadCourseThumbnail = async (req, res) => {
+  const localPath = req.file?.path;
+
+  try {
+    if (!localPath) {
+      return res
+        .status(400)
+        .json(new ApiError(400, "Thumbnail image is required"));
+    }
+
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      await fs.remove(localPath).catch(() => {});
+      return res.status(404).json(new ApiError(404, "Course not found"));
+    }
+
+    const result = await uploadOnCloudinary(localPath);
+    if (!result?.secure_url) {
+      return res
+        .status(500)
+        .json(new ApiError(500, "Failed to upload thumbnail"));
+    }
+
+    if (course.thumbnail?.public_id) {
+      await deleteFromCloudinary(course.thumbnail.public_id);
+    }
+
+    course.thumbnail = {
+      url: result.secure_url,
+      public_id: result.public_id,
+    };
+    await course.save();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, course.thumbnail, "Course thumbnail uploaded"));
+  } catch (err) {
+    console.error("uploadCourseThumbnail error:", err);
+    if (localPath) await fs.remove(localPath).catch(() => {});
     return res.status(500).json(new ApiError(500, "Server error"));
   }
 };

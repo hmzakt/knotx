@@ -16,6 +16,11 @@ const testSeriesSchema = new Schema (
             type : Number,
             required : true
         },
+        domain: {
+            type: String,
+            required: true,
+            trim: true
+        },
         papers : [{
             type : Schema.Types.ObjectId,
             ref : "Paper"

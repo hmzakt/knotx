@@ -20,6 +20,7 @@ interface Lecture {
   duration: number;
   order: number;
   isPreviewFree: boolean;
+  thumbnail?: { url?: string };
 }
 
 interface Section {
@@ -217,14 +218,20 @@ export default function CourseDetailPage() {
 
           {/* Right: sticky purchase card */}
           <div className="bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden shadow-2xl">
-            {course.thumbnail?.url && (
-              <div className="relative aspect-video">
-                <img src={course.thumbnail.url} alt={course.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Play className="w-12 h-12 text-white" fill="white" />
+            <div className="relative aspect-video bg-gray-800">
+              {course.thumbnail?.url ? (
+                <>
+                  <img src={course.thumbnail.url} alt={course.title} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Play className="w-12 h-12 text-white" fill="white" />
+                  </div>
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Play className="w-12 h-12 text-gray-600" />
                 </div>
-              </div>
-            )}
+              )}
+            </div>
             <div className="p-6 space-y-4">
               <div className="text-3xl font-bold text-white">
                 {course.isFree || course.price === 0 ? "Free" : formatPrice(course.price)}
@@ -304,6 +311,15 @@ export default function CourseDetailPage() {
                           key={lecture._id}
                           className="flex items-center gap-3 px-5 py-3 hover:bg-gray-900/50 transition-colors"
                         >
+                          <div className="w-16 h-10 rounded overflow-hidden bg-gray-800 flex-shrink-0">
+                            {lecture.thumbnail?.url ? (
+                              <img src={lecture.thumbnail.url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Play className="w-4 h-4 text-gray-600" />
+                              </div>
+                            )}
+                          </div>
                           {lecture.isPreviewFree || hasAccess
                             ? <Play className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                             : <Lock className="w-4 h-4 text-gray-500 flex-shrink-0" />}
@@ -329,6 +345,15 @@ export default function CourseDetailPage() {
                       key={lecture._id}
                       className="flex items-center gap-3 px-5 py-3 hover:bg-gray-900/50 transition-colors"
                     >
+                      <div className="w-16 h-10 rounded overflow-hidden bg-gray-800 flex-shrink-0">
+                        {lecture.thumbnail?.url ? (
+                          <img src={lecture.thumbnail.url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Play className="w-4 h-4 text-gray-600" />
+                          </div>
+                        )}
+                      </div>
                       {lecture.isPreviewFree || hasAccess
                         ? <Play className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                         : <Lock className="w-4 h-4 text-gray-500 flex-shrink-0" />}

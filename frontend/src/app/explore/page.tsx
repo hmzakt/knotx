@@ -11,10 +11,11 @@ import { useAttempts } from "@/hooks/useAttempts";
 import { useRouter } from "next/navigation";
 import { useRouteLoading } from "@/contexts/RouteLoadingContext";
 import apiClient from "@/lib/api";
-import { Search, X, BookOpen, Layers, Lock, CrownIcon, Eye, EyeOff, ShoppingCart } from "lucide-react";
+import { Search, X, BookOpen, Layers, Lock, CrownIcon, Eye, EyeOff, ShoppingCart, GraduationCap, Play, Clock } from "lucide-react";
 import SortSelect from "@/components/SortSelect";
 import CategorySelect from "@/components/CategorySelect";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCourses, Course } from "@/hooks/useCourses";
 
 // -------------------------
 // Types
@@ -37,8 +38,16 @@ interface TestSeries {
   papersCount?: number;
 }
 
-type TabType = "papers" | "test-series";
+type TabType = "papers" | "test-series" | "courses";
 type SortOption = "newest" | "oldest" | "priceLow" | "priceHigh";
+
+const formatCourseDuration = (seconds: number) => {
+  if (!seconds) return "—";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+};
 
 export default function ExplorePage() {
   const router = useRouter();
@@ -46,6 +55,7 @@ export default function ExplorePage() {
   const { user } = useAuth();
   const { subscriptions, loading: loadingSubscriptions } = useSubscription();
   const { papers, testSeries, loading: loadingContent, error: contentError } = useContent();
+  const { courses, loading: loadingCourses, error: coursesError } = useCourses();
   const { getAttemptForPaper, getAttemptStatus } = useAttempts();
 
   const [startConflicts, setStartConflicts] = useState<Record<string, { attemptId?: string; message?: string }>>({});
@@ -104,10 +114,10 @@ export default function ExplorePage() {
 
   // Build payment data for modal (always provide paise values)
   const buildPaymentData = (args: {
-    type: TabType | 'all-access';
-    item?: Paper | TestSeries;
+    type: TabType | "all-access" | "single-course";
+    item?: Paper | TestSeries | Course;
   }) => {
-    if (args.type === 'all-access') {
+    if (args.type === "all-access") {
       const allAccessAmountPaise = Number(process.env.NEXT_PUBLIC_ALL_ACCESS_PRICE_PAISE || 800000);
       return {
         type: 'all-access' as const,
@@ -119,7 +129,21 @@ export default function ExplorePage() {
       };
     }
 
-    const isPaper = args.type === 'papers';
+    if (args.type === "single-course") {
+      const course = args.item as Course;
+      const rupees = course.price ?? 0;
+      return {
+        type: "single-course" as const,
+        itemId: course._id,
+        itemName: course.title,
+        itemDescription: course.shortDescription || `${course.level} • ${course.language}`,
+        baseAmount: Math.max(Math.round(rupees * 100), 100),
+        currency: "INR",
+        durationDays: 365,
+      };
+    }
+
+    const isPaper = args.type === "papers";
     const item = args.item!;
     const rupees = (item as any).price ?? 0;
     const amountPaise = Math.max(Math.round(rupees * 100), 100);
@@ -145,10 +169,13 @@ export default function ExplorePage() {
     if (activeTab === "papers") {
       return Array.from(new Set((papers || []).map((p) => p.subject)));
     }
+    if (activeTab === "courses") {
+      return Array.from(new Set((courses || []).map((c) => c.category).filter(Boolean) as string[]));
+    }
     return Array.from(
       new Set((testSeries || []).map((s) => s.description?.split(" ")[0] || "Other"))
     );
-  }, [activeTab, papers, testSeries]);
+  }, [activeTab, papers, testSeries, courses]);
 
   const filteredAndSortedPapers: Paper[] = useMemo(() => {
     let result = (papers || []).filter(
@@ -198,6 +225,31 @@ export default function ExplorePage() {
     return result;
   }, [testSeries, searchQuery, categoryFilter, sortBy]);
 
+  const filteredAndSortedCourses: Course[] = useMemo(() => {
+    let result = (courses || []).filter(
+      (c) =>
+        (c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.shortDescription || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.instructor?.fullname || "").toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (categoryFilter === "all" || c.category === categoryFilter)
+    );
+    switch (sortBy) {
+      case "newest":
+        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case "oldest":
+        result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case "priceLow":
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case "priceHigh":
+        result.sort((a, b) => b.price - a.price);
+        break;
+    }
+    return result;
+  }, [courses, searchQuery, categoryFilter, sortBy]);
+
   const userHasAccessToItem = useMemo(() => {
     const accessMap: Record<string, boolean> = {};
     if (subscriptions?.hasAllAccess) {
@@ -213,8 +265,16 @@ export default function ExplorePage() {
         if (seriesId) accessMap[`test-series-${seriesId}`] = true;
       });
     }
+    if ((subscriptions as any)?.hasAllCourses) {
+      (courses || []).forEach((c) => (accessMap[`course-${c._id}`] = true));
+    } else if (subscriptions) {
+      (subscriptions.subscriptions.singleCourses || []).forEach((sub: any) => {
+        const courseId = sub.itemId?._id || sub.itemId;
+        if (courseId) accessMap[`course-${courseId}`] = true;
+      });
+    }
     return accessMap;
-  }, [subscriptions, papers, testSeries]);
+  }, [subscriptions, papers, testSeries, courses]);
 
   // Fetch series details
   const fetchTestSeriesWithPapers = async (seriesId: string) => {
@@ -304,17 +364,17 @@ export default function ExplorePage() {
     );
   }
 
-  if (loadingContent || loadingSubscriptions)
+  if (loadingContent || loadingSubscriptions || loadingCourses)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <LoadingSpinner size="lg" />
       </div>
     );
 
-  if (contentError)
+  if (contentError || coursesError)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-100">
-        <p>{contentError}</p>
+        <p>{contentError || coursesError}</p>
       </div>
     );
 
@@ -331,7 +391,7 @@ export default function ExplorePage() {
             Explore Premium Content
           </h1>
           <p className="text-lg md:text-xl text-gray-200 mb-8">
-            Access curated papers and test series to boost your preparation.
+            Access curated papers, test series, and video courses to boost your preparation.
           </p>
           {subscriptions?.hasAllAccess ? (
             <span className="text-emerald-400 text-xl font-semibold">Pro Subscribed - You can access all our contact</span>
@@ -355,7 +415,7 @@ export default function ExplorePage() {
           <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search papers or test series..."
+            placeholder="Search papers, test series, or courses..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-10 py-3 bg-card shadow-sm rounded-lg focus:ring-2 focus:ring-emerald-500 text-gray-100"
@@ -394,6 +454,17 @@ export default function ExplorePage() {
             <Layers className="w-4 h-4 inline mr-2" />
             Test Series ({filteredAndSortedSeries.length})
           </button>
+          <button
+            onClick={() => setActiveTab("courses")}
+            className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+              activeTab === "courses"
+                ? "bg-emerald-600 text-white scale-105 shadow-lg"
+                : "bg-card text-card-foreground shadow-sm hover:bg-gray-700"
+            }`}
+          >
+            <GraduationCap className="w-4 h-4 inline mr-2" />
+            Video Courses ({filteredAndSortedCourses.length})
+          </button>
         </div>
 
         {/* Filters */}
@@ -408,7 +479,89 @@ export default function ExplorePage() {
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(activeTab === "papers" ? filteredAndSortedPapers : filteredAndSortedSeries).map((item) => {
+          {activeTab === "courses" &&
+            filteredAndSortedCourses.map((course) => {
+              const hasAccess =
+                userHasAccessToItem[`course-${course._id}`] ||
+                (subscriptions as any)?.hasAllCourses;
+              return (
+                <div
+                  key={course._id}
+                  className="bg-card text-card-foreground shadow-sm rounded-xl border border-gray-700 hover:border-emerald-500 hover:scale-[1.02] transition-all duration-300 overflow-hidden flex flex-col"
+                >
+                  <div className="relative aspect-video bg-gray-800">
+                    {course.thumbnail?.url ? (
+                      <img
+                        src={course.thumbnail.url}
+                        alt={course.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Play className="w-10 h-10 text-gray-600" />
+                      </div>
+                    )}
+                    {!hasAccess && (
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <Lock className="w-8 h-8 text-white/60" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 flex flex-col flex-1">
+                    <span className="text-xs text-emerald-400 capitalize mb-1">{course.level}</span>
+                    <h3 className="text-lg font-semibold text-white line-clamp-2">{course.title}</h3>
+                    {course.shortDescription && (
+                      <p className="text-sm text-gray-400 mb-3 line-clamp-2">{course.shortDescription}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mb-3 mt-auto">
+                      {course.totalDuration > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatCourseDuration(course.totalDuration)}
+                        </span>
+                      )}
+                      <span>by {course.instructor?.fullname}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-emerald-400">
+                        {course.isFree || course.price === 0 ? "Free" : formatPrice(course.price)}
+                      </span>
+                      <Button
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                        disabled={navigatingId === course._id}
+                        onClick={() => {
+                          if (hasAccess) {
+                            start("nav");
+                            setNavigatingId(course._id);
+                            router.push(`/courses/${course._id}`);
+                          } else {
+                            setPaymentModal({
+                              isOpen: true,
+                              data: buildPaymentData({ type: "single-course", item: course }),
+                            });
+                          }
+                        }}
+                      >
+                        {navigatingId === course._id ? (
+                          "Loading..."
+                        ) : hasAccess ? (
+                          <span className="inline-flex items-center">
+                            <Eye className="w-4 h-4 mr-2" /> View
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center">
+                            <ShoppingCart className="w-4 h-4 mr-2" /> Buy
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+          {activeTab !== "courses" &&
+          (activeTab === "papers" ? filteredAndSortedPapers : filteredAndSortedSeries).map((item) => {
             const itemType = activeTab === "papers" ? "paper" : "test-series";
             const hasAccess = userHasAccessToItem[`${itemType}-${item._id}`] || subscriptions?.hasAllAccess;
             const isPaper = "subject" in item;
@@ -568,7 +721,6 @@ export default function ExplorePage() {
         </div>
       </div>
 
-      {/* Payment Modal */}
       {paymentModal.isOpen && (
         <PaymentModal
           isOpen={paymentModal.isOpen}

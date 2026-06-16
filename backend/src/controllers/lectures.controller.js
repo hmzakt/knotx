@@ -1,13 +1,14 @@
 import fs from "fs-extra";
 import path from "path";
 import jwt from "jsonwebtoken";
-import { v4 as uuid } from "uuid";
+import crypto from "node:crypto";
 
 import { Lecture } from "../models/lectures.model.js";
 import { Course } from "../models/courses.model.js";
 import { Section } from "../models/courseSections.model.js";
 import { convertToHLS } from "../services/ffmpeg.service.js";
 import { uploadDirectoryToR2, getR2Object, deleteR2Prefix } from "../services/r2.service.js";
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 
@@ -72,7 +73,7 @@ export const uploadLecture = async (req, res) => {
     }
 
     // HLS transcode─
-    const lectureId = uuid();
+    const lectureId = crypto.randomUUID();
     outputDir = path.join("src", "temp", lectureId);
 
     console.log(`[uploadLecture] Starting HLS transcode for lecture ${lectureId}`);
@@ -239,6 +240,7 @@ export const streamHLSContent = async (req, res) => {
     if (ext === ".ts") {
       res.setHeader("Content-Type", "video/mp2t");
       res.setHeader("Cache-Control", "private, max-age=300");
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
       if (r2Response.ContentLength) {
         res.setHeader("Content-Length", r2Response.ContentLength);
       }
@@ -278,6 +280,7 @@ export const streamHLSContent = async (req, res) => {
 
     res.setHeader("Content-Type", "application/x-mpegURL");
     res.setHeader("Cache-Control", "private, no-cache");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
     return res.send(rewritten);
   } catch (error) {
     console.error("streamHLSContent error:", error);
@@ -337,6 +340,53 @@ export const deleteLecture = async (req, res) => {
 };
 
 /**
+ * PATCH /api/v1/lectures/:id/thumbnail
+ * Admin — upload or replace lecture thumbnail (multipart field: thumbnail).
+ */
+export const uploadLectureThumbnail = async (req, res) => {
+  const localPath = req.file?.path;
+
+  try {
+    if (!localPath) {
+      return res
+        .status(400)
+        .json(new ApiError(400, "Thumbnail image is required"));
+    }
+
+    const lecture = await Lecture.findById(req.params.id);
+    if (!lecture) {
+      await fs.remove(localPath).catch(() => {});
+      return res.status(404).json(new ApiError(404, "Lecture not found"));
+    }
+
+    const result = await uploadOnCloudinary(localPath);
+    if (!result?.secure_url) {
+      return res
+        .status(500)
+        .json(new ApiError(500, "Failed to upload thumbnail"));
+    }
+
+    if (lecture.thumbnail?.public_id) {
+      await deleteFromCloudinary(lecture.thumbnail.public_id);
+    }
+
+    lecture.thumbnail = {
+      url: result.secure_url,
+      public_id: result.public_id,
+    };
+    await lecture.save();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, lecture.thumbnail, "Lecture thumbnail uploaded"));
+  } catch (error) {
+    console.error("uploadLectureThumbnail error:", error);
+    if (localPath) await fs.remove(localPath).catch(() => {});
+    return res.status(500).json(new ApiError(500, "Server error"));
+  }
+};
+
+/**
  * PATCH /api/v1/lectures/:id
  * Admin only — update lecture metadata (no video replacement).
  */
@@ -383,7 +433,7 @@ export const getLecturesByCourse = async (req, res) => {
       course: courseId,
       isPublished: true,
     })
-      .select("title description duration order section isPreviewFree")
+      .select("title description duration order section isPreviewFree thumbnail")
       .sort({ order: 1 })
       .lean();
 
