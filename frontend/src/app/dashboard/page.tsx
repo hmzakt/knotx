@@ -26,7 +26,6 @@ import {
   LogOut,
   ChevronRight,
   ArrowRight,
-  Clock,
   Zap,
   Target,
   Lock,
@@ -268,25 +267,6 @@ export default function Dashboard() {
   } = useSubscription();
   const isDark = useIsDark();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState("");
-
-  useEffect(() => {
-    const update = () => {
-      const now = new Date();
-      setCurrentTime(
-        now
-          .toLocaleTimeString("en-US", {
-            hour12: false,
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-          .replace(":", ":") + " ZULU"
-      );
-    };
-    update();
-    const interval = setInterval(update, 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   // ─── Computed stats ────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -562,12 +542,6 @@ export default function Dashboard() {
                   >
                     {user?.fullname || "Cadet"}
                   </p>
-                  <p
-                    className="text-[10px] uppercase tracking-[0.15em]"
-                    style={{ color: "var(--av-ink-muted)" }}
-                  >
-                    Rank: {user?.role === "admin" ? "Commander" : "Cadet"}
-                  </p>
                 </div>
               </div>
             </div>
@@ -641,6 +615,14 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="flex items-center gap-3 flex-wrap">
+                {user?.role === "admin" && (
+                  <Link href="/dashboard/adminRoles">
+                    <span className="badge-cobalt flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity">
+                      <Shield className="w-3 h-3" />
+                      ADMIN CONTROLS
+                    </span>
+                  </Link>
+                )}
                 <span className="badge-amber">AUTO-SYNC: ON</span>
                 <button
                   onClick={() => refetch?.()}
@@ -653,54 +635,6 @@ export default function Dashboard() {
                 </button>
               </div>
             </div>
-          </motion.div>
-
-          {/* ═══════════ SYSTEM STATUS STRIP ═══════════ */}
-          <motion.div
-            variants={fadeUp}
-            className="flex flex-wrap items-center gap-4 sm:gap-6 mb-8 px-4 py-3 rounded-xl"
-            style={{
-              background: isDark
-                ? "rgba(13, 21, 37, 0.5)"
-                : "rgba(255, 255, 255, 0.6)",
-              border: `1px solid ${isDark ? "rgba(240, 180, 41, 0.08)" : "rgba(10, 42, 94, 0.06)"}`,
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full status-dot-pulse"
-                style={{ background: subscriptions?.hasAnySubscription ? "#22c55e" : "var(--av-signal)" }}
-              />
-              <span
-                className="text-xs font-bold uppercase tracking-[0.15em]"
-                style={{ color: "var(--av-ink-muted)" }}
-              >
-                System Check:{" "}
-                <span style={{ color: subscriptions?.hasAnySubscription ? "#22c55e" : "var(--av-signal)" }}>
-                  {subscriptions?.hasAnySubscription ? "ALL CLEAR" : "NO ACTIVE SUBS"}
-                </span>
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5" style={{ color: "var(--av-ink-muted)" }} />
-              <span
-                className="text-xs uppercase tracking-wider t-minus"
-                style={{ color: "var(--av-ink-muted)" }}
-              >
-                {currentTime}
-              </span>
-            </div>
-            {user?.role === "admin" && (
-              <Link
-                href="/dashboard/adminRoles"
-                className="ml-auto"
-              >
-                <span className="badge-cobalt flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity">
-                  <Shield className="w-3 h-3" />
-                  ADMIN CONTROLS
-                </span>
-              </Link>
-            )}
           </motion.div>
 
           {/* ═══════════ MAIN GRID — Overview + Upcoming ═══════════ */}
@@ -779,8 +713,8 @@ export default function Dashboard() {
               </h2>
 
               {activeSubsList.length > 0 ? (
-                <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-                  {activeSubsList.slice(0, 8).map((sub, idx) => (
+                <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+                  {activeSubsList.map((sub, idx) => (
                     <motion.div
                       key={sub.id}
                       className="flex items-center justify-between gap-3 p-3 rounded-xl transition-all hover:scale-[1.01]"

@@ -485,7 +485,7 @@ function AttemptPaperPageInner() {
                   Question {currentIndex + 1} of {totalQuestions}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${answers[currentIndex] != null ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+                  <span className={`w-2.5 h-2.5 rounded-full`} style={{ background: answers[currentIndex] != null ? "var(--av-cobalt)" : "var(--av-signal)", animation: answers[currentIndex] != null ? "none" : "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
                   <span className="text-[10px] uppercase tracking-widest text-[var(--av-ink-muted)] font-bold">
                     {answers[currentIndex] != null ? 'Status: Answered' : 'Status: Awaiting Answer'}
                   </span>

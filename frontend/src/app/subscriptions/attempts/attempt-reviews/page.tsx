@@ -1,57 +1,60 @@
 "use client";
-import React, { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import apiClient from '@/lib/api';
-import { 
-  Trophy, 
-  Target, 
-  TrendingUp, 
-  BarChart3, 
-  CheckCircle, 
-  XCircle,
-  RotateCcw,
-  ArrowLeft,
-  Star,
-  Zap,
-  Brain,
-  BookOpen,
-  Clock,
-  Calendar,
-  Eye,
-  EyeOff,
-  Sun,
-  Moon
-} from 'lucide-react';
+import React, { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import apiClient from "@/lib/api";
+import { motion } from "framer-motion";
+import { ScrollReveal } from "@/components/home/scroll-motion";
+import {
+  Trophy, Target, TrendingUp, BarChart3, CheckCircle, XCircle,
+  RotateCcw, ArrowLeft, Star, Zap, Brain, BookOpen, Clock, Calendar,
+  Eye, EyeOff,
+} from "lucide-react";
 
 interface ReviewBreakdown {
-  score: number;
-  total: number;
-  message?: string;
-  difficulty?: Record<string, {correct:number, total:number}>;
-  domain?: Record<string, {correct:number, total:number}>;
-  paperTitle?: string;
-  subject?: string;
-  submittedAt?: string;
-  duration?: number;
+  score: number; total: number; message?: string;
+  difficulty?: Record<string, { correct: number; total: number }>;
+  domain?: Record<string, { correct: number; total: number }>;
+  paperTitle?: string; subject?: string; submittedAt?: string; duration?: number;
 }
 
 type AttemptListItem = {
-  _id: string;
-  paperId: string;
-  score: number;
-  status: 'in-progress' | 'submitted';
-  startedAt?: string;
-  submittedAt?: string;
-  totalQuestions?: number;
-  durationSec?: number;
+  _id: string; paperId: string; score: number; status: "in-progress" | "submitted";
+  startedAt?: string; submittedAt?: string; totalQuestions?: number; durationSec?: number;
 };
+
+function useIsDark() {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return isDark;
+}
+
+const formatDateTime = (iso?: string) => {
+  if (!iso) return "";
+  try { return new Date(iso).toLocaleString(); } catch { return iso; }
+};
+
+function getPerformanceMessage(score: number, total: number) {
+  const pct = total > 0 ? (score / total) * 100 : 0;
+  if (pct >= 90) return { message: "Outstanding! You've mastered this content!", icon: Star, accent: "var(--av-amber)" };
+  if (pct >= 80) return { message: "Excellent work! You're doing great!", icon: Trophy, accent: "var(--av-cobalt)" };
+  if (pct >= 70) return { message: "Good job! Keep up the practice!", icon: Target, accent: "var(--av-cobalt)" };
+  if (pct >= 60) return { message: "Not bad! Review the topics and try again.", icon: TrendingUp, accent: "var(--av-amber)" };
+  return { message: "Keep practicing! You'll improve with more attempts.", icon: Zap, accent: "var(--av-signal)" };
+}
 
 function AttemptReviewPageInner() {
   const searchParams = useSearchParams();
-  const attemptId = searchParams.get('attemptId') || undefined;
+  const attemptId = searchParams.get("attemptId") || undefined;
   const router = useRouter();
+  const isDark = useIsDark();
+
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ReviewBreakdown | null>(null);
   const [currentPaperId, setCurrentPaperId] = useState<string | null>(null);
@@ -59,543 +62,336 @@ function AttemptReviewPageInner() {
   const [attemptsLoading, setAttemptsLoading] = useState(false);
   const [latestAttemptId, setLatestAttemptId] = useState<string | null>(null);
   const [showPrevious, setShowPrevious] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
 
-  useEffect(() => {
-    if (!attemptId) return;
-    fetchReview(attemptId);
-  }, [attemptId]);
+  useEffect(() => { if (attemptId) fetchReview(attemptId); }, [attemptId]);
 
   const fetchReview = async (id: string) => {
     try {
       setLoading(true);
-      let res;
-      try {
-        res = await apiClient.get(`/attempts/${id}`);
-      } catch (err: any) {
-        throw new Error(err?.response?.data?.message || err.message || 'Failed to fetch review');
-      }
-      const json = res.data;
-      const payload = json?.data || json;
-      setData({
-        score: payload.score ?? payload.totalScore ?? 0,
-        total: payload.totalQuestions ?? payload.total ?? 0,
-        message: payload.message,
-        difficulty: payload.difficultyBreakdown,
-        domain: payload.domainBreakdown,
-        paperTitle: payload.paperTitle || payload.paper?.title,
-        subject: payload.subject || payload.paper?.subject,
-        submittedAt: payload.submittedAt,
-        duration: payload.duration
-      });
+      const res = await apiClient.get(`/attempts/${id}`);
+      const payload = res.data?.data || res.data;
+      setData({ score: payload.score ?? 0, total: payload.total ?? payload.totalQuestions ?? 0, message: payload.message, difficulty: payload.difficultyBreakdown, domain: payload.domainBreakdown, paperTitle: payload.paperTitle || payload.paper?.title, subject: payload.subject || payload.paper?.subject, submittedAt: payload.submittedAt, duration: payload.duration ?? payload.durationSec });
       const pid = payload.paperId || payload.paper?._id || null;
-      if (pid) {
-        setCurrentPaperId(pid);
-        // Load attempts for this paper to support previous attempts view
-        fetchAttemptsForPaper(pid);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Could not load review');
-    } finally {
-      setLoading(false);
-    }
+      if (pid) { setCurrentPaperId(pid); fetchAttemptsForPaper(pid); }
+    } catch (err) { console.error(err); alert("Could not load review"); }
+    finally { setLoading(false); }
   };
 
   const fetchAttemptsForPaper = async (paperId: string) => {
     try {
       setAttemptsLoading(true);
-      const res = await apiClient.get('/attempts');
+      const res = await apiClient.get("/attempts");
       const items: AttemptListItem[] = res?.data?.data || res?.data || [];
-      const filtered = items
-        .filter(a => String(a.paperId) === String(paperId) && a.status === 'submitted')
-        .sort((a, b) => {
-          const ad = new Date(a.submittedAt || a.startedAt || 0).getTime();
-          const bd = new Date(b.submittedAt || b.startedAt || 0).getTime();
-          return bd - ad; // newest first
-        });
+      const filtered = items.filter((a) => String(a.paperId) === String(paperId) && a.status === "submitted").sort((a, b) => new Date(b.submittedAt || b.startedAt || 0).getTime() - new Date(a.submittedAt || a.startedAt || 0).getTime());
       setAttempts(filtered);
       setLatestAttemptId(filtered[0]?._id || null);
-    } catch (err) {
-      console.error('Failed to load attempts list', err);
-    } finally {
-      setAttemptsLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setAttemptsLoading(false); }
   };
 
   const handleReattempt = async () => {
     try {
       setLoading(true);
-      // 1) Fetch the original attempt to get its paperId
       const attemptRes = await apiClient.get(`/attempts/${attemptId}`);
-      const attemptPayload = attemptRes?.data?.data || attemptRes?.data || null;
-      const paperId = attemptPayload?.paperId || attemptPayload?.paper?._id;
-      if (!paperId) {
-        alert('Cannot determine paper for this attempt');
-        return;
-      }
-
-      // 2) Try to start a fresh attempt
+      const payload = attemptRes?.data?.data || attemptRes?.data;
+      const paperId = payload?.paperId || payload?.paper?._id;
+      if (!paperId) { alert("Cannot determine paper"); return; }
       try {
-        // Hand over the previous attempt id so backend can link attempts
-        const startRes = await apiClient.post(`/attempts/start/${paperId}`, {
-          meta: { previousAttemptId: attemptId }
-        });
+        const startRes = await apiClient.post(`/attempts/start/${paperId}`, { meta: { previousAttemptId: attemptId } });
         const startPayload = startRes.data?.data || startRes.data;
-        const newAttemptId = startPayload.attemptId || startPayload._id || null;
-        if (!newAttemptId) throw new Error('Failed to obtain new attempt id');
-        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${newAttemptId}`);
-        return;
+        const newId = startPayload.attemptId || startPayload._id;
+        if (!newId) throw new Error("Failed to obtain new attempt id");
+        router.push(`/subscriptions/attempts/attempt-paper?attemptId=${newId}`);
       } catch (err: any) {
         const status = err?.response?.status;
-        const msg = err?.response?.data?.message || err.message;
-        // If an in-progress attempt already exists, resume it
         if (status === 409) {
-          try {
-            const list = await apiClient.get('/attempts');
-            const items = list?.data?.data || list?.data || [];
-            const existing = items.find((a: any) => a.paperId === paperId && a.status === 'in-progress');
-            if (existing?._id) {
-              router.push(`/subscriptions/attempts/attempt-paper?attemptId=${existing._id}`);
-              return;
-            }
-            // No existing found even though server says conflict
-            alert(msg || 'You already have an ongoing attempt for this paper.');
-            return;
-          } catch (listErr) {
-            console.error('Failed to list attempts after 409:', listErr);
-            alert(msg || 'You already have an ongoing attempt for this paper.');
-            return;
-          }
+          const list = await apiClient.get("/attempts");
+          const items = list?.data?.data || list?.data || [];
+          const existing = items.find((a: any) => a.paperId === paperId && a.status === "in-progress");
+          if (existing?._id) { router.push(`/subscriptions/attempts/attempt-paper?attemptId=${existing._id}`); return; }
         }
-        if (status === 401) {
-          alert('Please login again to reattempt.');
-          router.push('/login');
-          return;
-        }
-        if (status === 403) {
-          alert('Your subscription does not include this paper.');
-          router.push('/subscriptions');
-          return;
-        }
-        throw new Error(msg || 'Failed to start reattempt');
+        alert(err?.response?.data?.message || err?.message || "Failed to start reattempt");
       }
-    } catch (err: any) {
-      console.error(err);
-      alert('Could not start reattempt: ' + (err?.message || 'Unknown error'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getScoreColor = (score: number, total: number) => {
-    const percentage = (score / total) * 100;
-    if (percentage >= 80) return 'text-green-600';
-    if (percentage >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getScoreBgColor = (score: number, total: number) => {
-    const percentage = (score / total) * 100;
-    if (percentage >= 80) return 'bg-green-100';
-    if (percentage >= 60) return 'bg-yellow-100';
-    return 'bg-red-100';
-  };
-
-  const getPerformanceMessage = (score: number, total: number) => {
-    const percentage = (score / total) * 100;
-    if (percentage >= 90) return { message: "Outstanding! You've mastered this content!", icon: Star, color: "text-yellow-600" };
-    if (percentage >= 80) return { message: "Excellent work! You're doing great!", icon: Trophy, color: "text-green-600" };
-    if (percentage >= 70) return { message: "Good job! Keep up the practice!", icon: Target, color: "text-blue-600" };
-    if (percentage >= 60) return { message: "Not bad! Review the topics and try again.", icon: TrendingUp, color: "text-orange-600" };
-    return { message: "Keep practicing! You'll improve with more attempts.", icon: Zap, color: "text-red-600" };
-  };
-
-  const formatDateTime = (iso?: string) => {
-    if (!iso) return '';
-    try {
-      const d = new Date(iso);
-      return d.toLocaleString();
-    } catch {
-      return iso;
-    }
+    } catch (err: any) { console.error(err); alert("Could not start reattempt"); }
+    finally { setLoading(false); }
   };
 
   const viewAttempt = async (id: string) => {
-    // Update URL to reflect chosen attempt and fetch its review
     router.push(`/subscriptions/attempts/attempt-reviews?attemptId=${id}`);
     await fetchReview(id);
-    // collapse the list after switching
     setShowPrevious(false);
   };
 
-  if (!attemptId) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className="text-center">
-          <div className={`w-16 h-16 ${isDarkMode ? 'bg-red-900' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-            <XCircle className={`w-8 h-8 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
-          </div>
-          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>No Attempt Specified</h2>
-          <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>Please provide a valid attempt ID to view the review.</p>
-          <Button onClick={() => router.push('/subscriptions')} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            Back to Subscriptions
-          </Button>
+  const errState = (msg: string) => (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--av-bg)" }}>
+      <div className="text-center">
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(230,57,70,0.08)" }}>
+          <XCircle className="w-8 h-8" style={{ color: "var(--av-signal)" }} />
         </div>
+        <h2 className="font-display-black uppercase text-2xl mb-2" style={{ color: "var(--av-ink)" }}>{msg}</h2>
+        <button onClick={() => router.push("/subscriptions")} className="mt-4 px-6 py-2.5 rounded-lg font-bold uppercase tracking-widest text-sm" style={{ background: "var(--av-amber)", color: "#0d1117" }}>
+          Back to Subscriptions
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (loading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className={`mt-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading your results...</p>
-        </div>
+  if (!attemptId) return errState("No Attempt Specified");
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--av-bg)" }}>
+      <div className="flex flex-col items-center gap-3">
+        <LoadingSpinner size="lg" />
+        <p className="text-xs font-bold uppercase tracking-[0.3em]" style={{ color: "var(--av-ink-muted)" }}>Loading Results…</p>
       </div>
-    );
-  }
+    </div>
+  );
+  if (!data) return errState("No Data Available");
 
-  if (!data) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className="text-center">
-          <div className={`w-16 h-16 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-            <BarChart3 className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
-          </div>
-          <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>No Data Available</h2>
-          <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>Unable to load the review data for this attempt.</p>
-          <Button onClick={() => router.push('/subscriptions')} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            Back to Subscriptions
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const percentage = Math.round((data.score / data.total) * 100);
-  const performance = getPerformanceMessage(data.score, data.total);
-  const PerformanceIcon = performance.icon;
+  const percentage = data.total > 0 ? Math.round((data.score / data.total) * 100) : 0;
+  const perf = getPerformanceMessage(data.score, data.total);
+  const PerfIcon = perf.icon;
   const isLatest = latestAttemptId ? latestAttemptId === attemptId : true;
-  const previousAttempts = attempts.filter(a => a._id !== attemptId);
+  const previousAttempts = attempts.filter((a) => a._id !== attemptId);
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
-      <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b shadow-sm`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => router.push('/subscriptions')}
-                variant="outline"
-                className={`flex items-center space-x-2 ${isDarkMode 
-                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Subscriptions</span>
-              </Button>
-              <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                <Trophy className="w-5 h-5 inline mr-2" />
-                Attempt Review
-              </div>
-            </div>
-            
-            {/* Dark Mode Toggle */}
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                variant="outline"
-                size="sm"
-                className={`${isDarkMode 
-                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
-          
-          <div className="mt-6 text-center">
-            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-              {data.paperTitle || 'Attempt Review'}
-            </h1>
-            {data.subject && (
-              <div className={`inline-flex items-center px-3 py-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-full text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {data.subject}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--av-bg)", color: "var(--av-ink)" }}>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Attempt Context Bar */}
-        <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6 mb-8`}>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              {isLatest ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-                  Showing latest attempt
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
-                  Viewing an older attempt
+      {/* Header */}
+      <div className="border-b pt-[60px] pb-8" style={{ background: isDark ? "#070c18" : "#f4f1eb", borderColor: "var(--av-border)" }}>
+        <div className={`absolute inset-x-0 top-0 h-full ${isDark ? "hero-grid-dark" : "hero-grid-light"} opacity-30 pointer-events-none`} />
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-4">
+          <div className="flex items-center justify-between mb-8">
+            <button onClick={() => router.push("/subscriptions")}
+              className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest transition hover:opacity-70"
+              style={{ color: "var(--av-ink-muted)" }}>
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Subscriptions
+            </button>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest" style={{ color: "var(--av-ink-muted)" }}>
+              <Trophy className="w-4 h-4" style={{ color: "var(--av-amber)" }} /> Attempt Review
+            </div>
+          </div>
+          <div className="text-center">
+            <motion.h1 className="font-display-black uppercase leading-none mb-3"
+              style={{ fontSize: "clamp(1.5rem, 4vw, 3rem)", letterSpacing: "-0.03em" }}
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              {data.paperTitle || "Attempt Review"}
+            </motion.h1>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {data.subject && (
+                <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded"
+                  style={{ background: "rgba(240,180,41,0.1)", color: "var(--av-amber)", border: "1px solid rgba(240,180,41,0.2)" }}>
+                  {data.subject}
                 </span>
               )}
               {data.submittedAt && (
-                <span className={`ml-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Submitted {formatDateTime(data.submittedAt)}
+                <span className="text-xs flex items-center gap-1" style={{ color: "var(--av-ink-muted)" }}>
+                  <Calendar className="w-3.5 h-3.5" /> {formatDateTime(data.submittedAt)}
                 </span>
               )}
             </div>
-            <div className="flex gap-3">
-              {!isLatest && latestAttemptId && (
-                <Button
-                  onClick={() => viewAttempt(latestAttemptId)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Show Latest
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => setShowPrevious(prev => !prev)}
-                disabled={attemptsLoading || previousAttempts.length === 0}
-                className={`${isDarkMode 
-                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {attemptsLoading
-                  ? 'Loading…'
-                  : previousAttempts.length === 0
-                    ? 'No Previous Attempts'
-                    : (showPrevious ? <><EyeOff className="w-4 h-4 mr-2" />Hide Previous</> : <><Eye className="w-4 h-4 mr-2" />View Previous</>)}
-              </Button>
-            </div>
           </div>
         </div>
+      </div>
 
-        {/* Previous Attempts List */}
-        {showPrevious && previousAttempts.length > 0 && (
-          <div className={`mb-10 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6`}>
-            <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Previous Attempts</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {previousAttempts.map(a => {
-                const total = a.totalQuestions ?? data.total;
-                const pct = total > 0 ? Math.round((a.score / total) * 100) : 0;
-                return (
-                  <button
-                    key={a._id}
-                    onClick={() => viewAttempt(a._id)}
-                    className={`text-left ${isDarkMode ? 'bg-gray-700 border-gray-600 hover:border-emerald-500' : 'bg-gray-50 border-gray-200 hover:border-emerald-300'} border rounded-xl p-4 hover:shadow transition`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          <Clock className="w-3 h-3 inline mr-1" />
-                          {formatDateTime(a.submittedAt || a.startedAt)}
-                        </div>
-                        <div className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {a.score}/{total} ({pct}%)
-                        </div>
-                      </div>
-                      <div className="text-emerald-600 text-sm font-medium">View →</div>
-                    </div>
-                  </button>
-                );
-              })}
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 py-10 space-y-8">
+
+        {/* Context bar */}
+        <ScrollReveal y={20}>
+          <div className="rounded-xl p-5 border-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+            style={{ background: "var(--av-card-bg)", borderColor: "var(--av-card-border)" }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--av-ink-muted)" }}>
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: isLatest ? "var(--av-cobalt)" : "var(--av-amber)" }} />
+              {isLatest ? "Showing latest attempt" : "Viewing an older attempt"}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {!isLatest && latestAttemptId && (
+                <button onClick={() => viewAttempt(latestAttemptId)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.03]"
+                  style={{ background: "var(--av-cobalt)", color: "#fff" }}>
+                  <Eye className="w-3.5 h-3.5" /> Show Latest
+                </button>
+              )}
+              <button
+                onClick={() => setShowPrevious((p) => !p)}
+                disabled={attemptsLoading || previousAttempts.length === 0}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all hover:opacity-80 disabled:opacity-40"
+                style={{ border: "1.5px solid var(--av-border)", color: "var(--av-ink-muted)", background: "transparent" }}>
+                {attemptsLoading ? "Loading…"
+                  : previousAttempts.length === 0 ? "No Previous"
+                  : showPrevious ? <><EyeOff className="w-3.5 h-3.5" /> Hide Previous</> : <><Eye className="w-3.5 h-3.5" /> Previous ({previousAttempts.length})</>}
+              </button>
             </div>
           </div>
+        </ScrollReveal>
+
+        {/* Previous attempts */}
+        {showPrevious && previousAttempts.length > 0 && (
+          <ScrollReveal y={16}>
+            <div className="rounded-xl p-6 border-2" style={{ background: "var(--av-card-bg)", borderColor: "var(--av-card-border)" }}>
+              <h3 className="font-display uppercase text-base mb-4" style={{ color: "var(--av-ink)" }}>Previous Attempts</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {previousAttempts.map((a) => {
+                  const total = a.totalQuestions ?? data.total;
+                  const pct = total > 0 ? Math.round((a.score / total) * 100) : 0;
+                  return (
+                    <button key={a._id} onClick={() => viewAttempt(a._id)}
+                      className="text-left p-4 rounded-xl border-2 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                      style={{ background: isDark ? "rgba(7,12,24,0.5)" : "rgba(244,241,235,0.6)", borderColor: "var(--av-border)" }}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs mb-1 flex items-center gap-1" style={{ color: "var(--av-ink-muted)" }}>
+                            <Clock className="w-3 h-3" />{formatDateTime(a.submittedAt || a.startedAt)}
+                          </div>
+                          <div className="font-display-black text-xl" style={{ color: pct >= 60 ? "var(--av-cobalt)" : "var(--av-amber)" }}>
+                            {a.score}/{total} <span className="text-sm">({pct}%)</span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--av-amber)" }}>View →</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </ScrollReveal>
         )}
 
         {/* Score Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          {/* Main Score Card */}
-          <div className="lg:col-span-2">
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-8`}>
-              <div className="text-center mb-8">
-                <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full mb-4 ${getScoreBgColor(data.score, data.total)}`}>
-                  <span className={`text-4xl font-bold ${getScoreColor(data.score, data.total)}`}>
-                    {percentage}%
-                  </span>
-                </div>
-                <h2 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                  {data.score} out of {data.total}
-                </h2>
-                <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Questions Answered Correctly</p>
+        <ScrollReveal y={24}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main score card */}
+            <div className="lg:col-span-2 rounded-xl p-8 border-2 text-center"
+              style={{ background: "var(--av-card-bg)", borderColor: percentage >= 80 ? "var(--av-cobalt)" : percentage >= 60 ? "var(--av-amber)" : "var(--av-signal)" }}>
+              <div className="w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-5"
+                style={{ background: percentage >= 80 ? "rgba(10,42,94,0.08)" : percentage >= 60 ? "rgba(240,180,41,0.08)" : "rgba(230,57,70,0.08)", border: `3px solid ${percentage >= 80 ? "var(--av-cobalt)" : percentage >= 60 ? "var(--av-amber)" : "var(--av-signal)"}` }}>
+                <span className="font-display-black text-4xl" style={{ color: percentage >= 80 ? "var(--av-cobalt)" : percentage >= 60 ? "var(--av-amber)" : "var(--av-signal)" }}>
+                  {percentage}%
+                </span>
               </div>
-              
-              <div className="flex items-center justify-center space-x-2 mb-6">
-                <PerformanceIcon className={`w-6 h-6 ${performance.color}`} />
-                <p className={`text-lg font-semibold ${performance.color}`}>
-                  {performance.message}
-                </p>
+              <h2 className="font-display-black uppercase text-2xl mb-1" style={{ color: "var(--av-ink)" }}>
+                {data.score} / {data.total}
+              </h2>
+              <p className="text-sm mb-5" style={{ color: "var(--av-ink-muted)" }}>Questions answered correctly</p>
+              {/* Progress bar */}
+              <div className="h-2 rounded-full overflow-hidden mb-5" style={{ background: "var(--av-border)" }}>
+                <motion.div className="h-full rounded-full"
+                  initial={{ width: 0 }} animate={{ width: `${percentage}%` }} transition={{ duration: 1, delay: 0.3 }}
+                  style={{ background: percentage >= 80 ? "var(--av-cobalt)" : percentage >= 60 ? "var(--av-amber)" : "var(--av-signal)" }} />
               </div>
-
+              <div className="flex items-center justify-center gap-2">
+                <PerfIcon className="w-5 h-5" style={{ color: perf.accent }} />
+                <p className="text-sm font-bold" style={{ color: perf.accent }}>{perf.message}</p>
+              </div>
               {data.message && (
-                <div className={`${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border rounded-xl p-4 text-center`}>
-                  <p className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{data.message}</p>
+                <div className="mt-4 p-3 rounded-lg text-sm" style={{ background: "var(--av-bg-alt)", border: "1px solid var(--av-border)", color: "var(--av-ink)" }}>
+                  {data.message}
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Stats Cards */}
-          <div className="space-y-6">
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Accuracy</h3>
-                <Target className="w-6 h-6 text-emerald-600" />
-              </div>
-              <div className="text-3xl font-bold text-emerald-600 mb-2">{percentage}%</div>
-              <div className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2`}>
-                <div 
-                  className="bg-emerald-500 h-2 rounded-full transition-all duration-1000"
-                  style={{ width: `${percentage}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Correct Answers</h3>
-                <CheckCircle className="w-6 h-6 text-emerald-600" />
-              </div>
-              <div className="text-3xl font-bold text-emerald-600 mb-2">{data.score}</div>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>out of {data.total} total</p>
-            </div>
-
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-6`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Incorrect</h3>
-                <XCircle className="w-6 h-6 text-red-500" />
-              </div>
-              <div className="text-3xl font-bold text-red-500 mb-2">{data.total - data.score}</div>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>questions to review</p>
+            {/* Stats column */}
+            <div className="space-y-4">
+              {[
+                { label: "Accuracy", value: `${percentage}%`, icon: <Target className="w-4 h-4" />, accent: percentage >= 60 ? "var(--av-cobalt)" : "var(--av-amber)" },
+                { label: "Correct Answers", value: data.score, icon: <CheckCircle className="w-4 h-4" />, accent: "var(--av-cobalt)", sub: `out of ${data.total} total` },
+                { label: "Incorrect", value: data.total - data.score, icon: <XCircle className="w-4 h-4" />, accent: "var(--av-signal)", sub: "questions to review" },
+              ].map((s, i) => (
+                <div key={i} className="rounded-xl p-5 border-2" style={{ background: "var(--av-card-bg)", borderColor: "var(--av-card-border)" }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--av-ink-muted)" }}>{s.label}</h3>
+                    <span style={{ color: s.accent }}>{s.icon}</span>
+                  </div>
+                  <div className="font-display-black text-3xl mb-0.5" style={{ color: s.accent }}>{s.value}</div>
+                  {s.sub && <p className="text-xs" style={{ color: "var(--av-ink-muted)" }}>{s.sub}</p>}
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        </ScrollReveal>
 
-        {/* Detailed Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Difficulty Breakdown */}
-          {data.difficulty && Object.keys(data.difficulty).length > 0 && (
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-8`}>
-              <div className="flex items-center mb-6">
-                <Brain className="w-6 h-6 text-emerald-600 mr-3" />
-                <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Difficulty Breakdown</h3>
-              </div>
-              <div className="space-y-4">
-                {Object.entries(data.difficulty).map(([difficulty, stats]) => {
-                  const percentage = Math.round((stats.correct / stats.total) * 100);
-                  return (
-                    <div key={difficulty} className={`p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} capitalize`}>{difficulty}</span>
-                        <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{stats.correct}/{stats.total}</span>
-                      </div>
-                      <div className={`w-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} rounded-full h-2`}>
-                        <div 
-                          className="bg-emerald-500 h-2 rounded-full transition-all duration-1000"
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                      <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mt-1`}>{percentage}% accuracy</div>
-                    </div>
-                  );
-                })}
-              </div>
+        {/* Breakdowns */}
+        {(data.difficulty || data.domain) && (
+          <ScrollReveal y={20} delay={0.1}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {data.difficulty && Object.keys(data.difficulty).length > 0 && (
+                <div className="rounded-xl p-6 border-2" style={{ background: "var(--av-card-bg)", borderColor: "var(--av-card-border)" }}>
+                  <div className="flex items-center gap-2 mb-5">
+                    <Brain className="w-5 h-5" style={{ color: "var(--av-amber)" }} />
+                    <h3 className="font-display uppercase text-base" style={{ color: "var(--av-ink)" }}>Difficulty Breakdown</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(data.difficulty).map(([d, stats]) => {
+                      const pct = Math.round((stats.correct / stats.total) * 100);
+                      return (
+                        <div key={d} className="p-4 rounded-lg" style={{ background: "var(--av-bg-alt)" }}>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-bold capitalize" style={{ color: "var(--av-ink)" }}>{d}</span>
+                            <span className="text-xs font-mono" style={{ color: "var(--av-ink-muted)" }}>{stats.correct}/{stats.total}</span>
+                          </div>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--av-border)" }}>
+                            <motion.div className="h-full rounded-full"
+                              initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.2 }}
+                              style={{ background: pct >= 60 ? "var(--av-cobalt)" : "var(--av-amber)" }} />
+                          </div>
+                          <p className="text-xs mt-1" style={{ color: "var(--av-ink-muted)" }}>{pct}% accuracy</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {data.domain && Object.keys(data.domain).length > 0 && (
+                <div className="rounded-xl p-6 border-2" style={{ background: "var(--av-card-bg)", borderColor: "var(--av-card-border)" }}>
+                  <div className="flex items-center gap-2 mb-5">
+                    <BookOpen className="w-5 h-5" style={{ color: "var(--av-cobalt)" }} />
+                    <h3 className="font-display uppercase text-base" style={{ color: "var(--av-ink)" }}>Domain Breakdown</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {Object.entries(data.domain).map(([d, stats]) => {
+                      const pct = Math.round((stats.correct / stats.total) * 100);
+                      return (
+                        <div key={d} className="p-4 rounded-lg" style={{ background: "var(--av-bg-alt)" }}>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-bold capitalize" style={{ color: "var(--av-ink)" }}>{d}</span>
+                            <span className="text-xs font-mono" style={{ color: "var(--av-ink-muted)" }}>{stats.correct}/{stats.total}</span>
+                          </div>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--av-border)" }}>
+                            <motion.div className="h-full rounded-full"
+                              initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.2 }}
+                              style={{ background: pct >= 60 ? "var(--av-cobalt)" : "var(--av-amber)" }} />
+                          </div>
+                          <p className="text-xs mt-1" style={{ color: "var(--av-ink-muted)" }}>{pct}% accuracy</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </ScrollReveal>
+        )}
 
-          {/* Domain Breakdown */}
-          {data.domain && Object.keys(data.domain).length > 0 && (
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl shadow-lg border p-8`}>
-              <div className="flex items-center mb-6">
-                <BookOpen className="w-6 h-6 text-emerald-600 mr-3" />
-                <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Domain Breakdown</h3>
-              </div>
-              <div className="space-y-4">
-                {Object.entries(data.domain).map(([domain, stats]) => {
-                  const percentage = Math.round((stats.correct / stats.total) * 100);
-                  return (
-                    <div key={domain} className={`p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} capitalize`}>{domain}</span>
-                        <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{stats.correct}/{stats.total}</span>
-                      </div>
-                      <div className={`w-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} rounded-full h-2`}>
-                        <div 
-                          className="bg-emerald-500 h-2 rounded-full transition-all duration-1000"
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                      <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mt-1`}>{percentage}% accuracy</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            onClick={() => router.push('/subscriptions')}
-            variant="outline"
-            className={`font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 ${isDarkMode 
-              ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Subscriptions</span>
-          </Button>
-          
-          <Button
-            variant="outline"
-            onClick={() => setShowPrevious(prev => !prev)}
-            disabled={attemptsLoading || previousAttempts.length === 0}
-            className={`px-8 py-4 rounded-xl shadow-sm hover:shadow transform hover:scale-105 transition-all duration-200 ${isDarkMode 
-              ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            {attemptsLoading
-              ? 'Loading Previous Attempts…'
-              : previousAttempts.length === 0
-                ? 'No Previous Attempts'
-                : (showPrevious ? <><EyeOff className="w-4 h-4 mr-2" />Hide Previous</> : <><Eye className="w-4 h-4 mr-2" />View Previous ({previousAttempts.length})</>)}
-          </Button>
-
-          <Button
-            onClick={() => router.push(`/subscriptions/attempts/detailed-review?attemptId=${attemptId}`)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
-          >
-            <Eye className="w-5 h-5" />
-            <span>View Detailed Review</span>
-          </Button>
-
-          <Button
-            onClick={handleReattempt}
-            disabled={loading}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
-          >
-            <RotateCcw className="w-5 h-5" />
-            <span>{loading ? 'Starting...' : 'Reattempt Paper'}</span>
-          </Button>
-        </div>
+        {/* Action buttons */}
+        <ScrollReveal y={16} delay={0.15}>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button onClick={() => router.push("/subscriptions")}
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-widest transition-all hover:opacity-80"
+              style={{ border: "1.5px solid var(--av-border)", color: "var(--av-ink-muted)" }}>
+              <ArrowLeft className="w-4 h-4" /> Subscriptions
+            </button>
+            <button onClick={() => router.push(`/subscriptions/attempts/detailed-review?attemptId=${attemptId}`)}
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-widest transition-all hover:scale-[1.02]"
+              style={{ background: "var(--av-cobalt)", color: "#fff" }}>
+              <Eye className="w-4 h-4" /> Detailed Review
+            </button>
+            <button onClick={handleReattempt} disabled={loading}
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-bold uppercase tracking-widest transition-all hover:scale-[1.02] disabled:opacity-50"
+              style={{ background: "var(--av-amber)", color: "#0d1117" }}>
+              <RotateCcw className="w-4 h-4" /> {loading ? "Starting…" : "Reattempt Paper"}
+            </button>
+          </div>
+        </ScrollReveal>
       </div>
     </div>
   );
@@ -603,7 +399,7 @@ function AttemptReviewPageInner() {
 
 export default function AttemptReviewPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><LoadingSpinner size="lg" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center" style={{ background: "var(--av-bg)" }}><LoadingSpinner size="lg" /></div>}>
       <AttemptReviewPageInner />
     </Suspense>
   );

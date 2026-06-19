@@ -272,6 +272,7 @@ export const submitAttempt = async (req, res) =>{
             attemptId : attempt._id,
             score,
             total : attempt.totalQuestions,
+            totalQuestions : attempt.totalQuestions,
             percent : (attempt.totalQuestions > 0) ? (score / (attempt.totalQuestions * marksPerQ) * 100) : 0,
             breakdown 
         }, "attempt submitted and scoreed"));
@@ -333,6 +334,7 @@ export const getAttempt = async (req, res) => {
                 paperId: attempt.paperId,
                 status: attempt.status,
                 startedAt: attempt.startedAt,
+                total: attempt.totalQuestions,
                 totalQuestions: attempt.totalQuestions,
                 questions,
                 answers: attempt.answers,
@@ -357,6 +359,7 @@ export const getAttempt = async (req, res) => {
         status: attempt.status,
         score: attempt.score,
         total: attempt.totalQuestions,
+        totalQuestions: attempt.totalQuestions,
         submittedAt: attempt.submittedAt,
         durationSec: attempt.durationSec,
         breakdown

@@ -29,10 +29,10 @@ export default function RouteLoadingOverlay() {
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none">
       {/* Top progress bar */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-600/20">
+      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "rgba(240,180,41,0.2)" }}>
         <div
-          className="h-full bg-emerald-500 transition-all duration-200"
-          style={{ width: `${progress}%` }}
+          className="h-full transition-all duration-200"
+          style={{ width: `${progress}%`, background: "var(--av-amber)", boxShadow: "0 0 8px rgba(240,180,41,0.6)" }}
         />
       </div>
       {/* Subtle overlay */}
